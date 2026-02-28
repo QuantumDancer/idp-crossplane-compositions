@@ -1,0 +1,66 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: applicationenvironments.idp.rottler.io
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: application-environment
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: application-environment
+spec:
+  scope: Cluster
+  group: idp.rottler.io
+  names:
+    kind: ApplicationEnvironment
+    plural: applicationenvironments
+  defaultCompositionRef:
+    name: application-environment
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            ApplicationEnvironment provisions the namespace, RBAC, Kyverno policies,
+            and ArgoCD Application for a single deployable component.
+            There is one instance per component per cluster.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                team:
+                  type: string
+                  description: >
+                    The GitLab group and Backstage Group that owns this environment,
+                    e.g. team-a. Drives namespace naming and RBAB bindings.
+                system:
+                  type: string
+                  description: >
+                    The Backstage System this application environment belongs to.
+                    This is the logical application or product, e.g. order-management.
+                component:
+                  type: string
+                  description: >
+                    The Backstage Component this application environment belongs to.
+                    This is the individual deployable unit within the system, e.g. oder-service.
+                environment:
+                  type: string
+                  description: >
+                    The environment of the application. Needs to be one of homelab, development, or production.
+                  enum:
+                    - homelab
+                    - development
+                    - production
+                  default: homelab
+              required:
+                - team
+                - system
+                - component

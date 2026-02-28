@@ -1,0 +1,13 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: ApplicationEnvironment
+metadata:
+  # The resource name needs to match the <team>-<system>-<component> pattern
+  name: team-a-order-management-order-service
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/system: order-management
+    idp.rottler.io/component: order-service
+spec:
+  team: team-a
+  system: order-management
+  component: order-service

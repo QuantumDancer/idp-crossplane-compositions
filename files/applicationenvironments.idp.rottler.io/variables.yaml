@@ -1,0 +1,5 @@
+{{- $team := .observed.composite.resource.spec.team -}}
+{{- $system := .observed.composite.resource.spec.system -}}
+{{- $component := .observed.composite.resource.spec.component -}}
+{{- $environment := .observed.composite.resource.spec.environment -}}
+
