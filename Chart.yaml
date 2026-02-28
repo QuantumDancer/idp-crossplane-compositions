@@ -1,0 +1,5 @@
+apiVersion: v2
+name: idp-crossplane-compositions
+description: Crossplane Compositions for the IDP
+version: 0.1.0
+appVersion: "0.1.0"
