@@ -33,6 +33,7 @@ spec:
           {{- .Files.Get "files/applicationenvironments.idp.rottler.io/variables.yaml" | nindent 10 }}
           {{- .Files.Get "files/applicationenvironments.idp.rottler.io/namespace.yaml" | nindent 10 }}
           {{- .Files.Get "files/applicationenvironments.idp.rottler.io/argocd-application.yaml" | nindent 10 }}
+          {{- .Files.Get "files/applicationenvironments.idp.rottler.io/argocd-repo-secret.yaml" | nindent 10 }}
   - step: automatically-detect-ready-composed-resources
     functionRef:
       name: crossplane-contrib-function-auto-ready

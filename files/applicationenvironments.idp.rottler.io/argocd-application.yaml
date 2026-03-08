@@ -12,7 +12,7 @@ spec:
   project: {{ $team }}
 
   source:
-    repoURL: {{ printf "https://gitlab.home.rottlr.de/idp/%s/%s-%s-deployment" $team $system $component }}
+    repoURL: {{ printf "https://gitlab.home.rottlr.de/idp/%s/%s-%s-deployment.git" $team $system $component }}
     targetRevision: {{ if or (eq $environment "homelab") (eq $environment "development")}}development{{ else }}main{{end}}
     path: ./
     helm:
