@@ -4,13 +4,13 @@ This repository implements all Crossplane compositions for my IDP reference appl
 
 ## XRD Catalog
 
-| XRD Kind                 | Group            | Purpose                                | Scope     |
-| ------------------------ | ---------------- | -------------------------------------- | --------- |
-| `ApplicationEnvironment` | `idp.rottler.io` | Namespace + RBAC + Argo CD Application | Cluster   |
-| `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials    | Namespace |
-| `RedisCache`             | `idp.rottler.io` | Redis instance                         | Namespace |
-| `MessageQueue`           | `idp.rottler.io` | RabbitMQ or Kafka topic/queue          | Namespace |
-| `SearchIndex`            | `idp.rottler.io` | Elasticsearch index                    | Namespace |
+| XRD Kind                 | Group            | Purpose                                | Scope     | Status               |
+| ------------------------ | ---------------- | -------------------------------------- | --------- | -------------------- |
+| `ApplicationEnvironment` | `idp.rottler.io` | Namespace + RBAC + Argo CD Application | Cluster   | Implemented          |
+| `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials    | Namespace | Migrate to this repo |
+| `RedisCache`             | `idp.rottler.io` | Redis instance                         | Namespace | Planned              |
+| `MessageQueue`           | `idp.rottler.io` | RabbitMQ or Kafka topic/queue          | Namespace | Planned              |
+| `SearchIndex`            | `idp.rottler.io` | Elasticsearch index                    | Namespace | Planned              |
 
 ## XRD API Conventions
 
