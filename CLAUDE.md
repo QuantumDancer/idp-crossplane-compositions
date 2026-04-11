@@ -17,6 +17,15 @@ helm lint .
 
 # Apply an example XR to test a composition
 kubectl apply -f examples/applicationenvironments.idp.rottler.io/default.yaml
+
+# Run render (snapshot) tests — no cluster required
+scripts/test-render.sh
+
+# Regenerate render golden files after intentional composition changes
+scripts/update-snapshots.sh
+
+# Run full E2E suite on a temporary k3d cluster (requires Docker)
+scripts/run-e2e.sh
 ```
 
 ## Architecture
@@ -53,6 +62,36 @@ The `files/` directory is the working area for composition logic. Each XRD gets 
 
 - **ArgoCD** (`argoproj.io/v1alpha1 Application`) — deployment repo URL pattern: `https://gitlab.home.rottlr.de/idp/<team>/<system>-<component>-deployment.git`
 - **External Secrets Operator** (`external-secrets.io/v1 ExternalSecret`) — reads from Vault via `ClusterSecretStore/vault-backend`; the ArgoCD repo pull-secret path is `idp/platform/argocd/idp-group-pull-secret`
+
+### Testing
+
+Two test layers; both run in CI via `.gitlab-ci.yml`.
+
+**Render tests** (`scripts/test-render.sh`) — fast, no cluster required.
+`crossplane render` executes the composition pipeline locally against the example XR and diffs the output against a committed golden file (`tests/render/<xrd>/expected/rendered.yaml`).
+In CI the `crossplane render` Docker runtime is replaced by gRPC servers extracted from OCI images with `crane` (`tests/render/<xrd>/functions.ci.yaml`), avoiding the need for a Docker daemon.
+After intentional composition changes, run `scripts/update-snapshots.sh` to regenerate golden files (it verifies the local `crossplane` CLI matches the pinned CI version first).
+
+**E2E tests** (`scripts/run-e2e.sh`) — full integration, requires Docker.
+Spins up a k3d cluster, installs Crossplane + the IDP chart, waits for Functions and XRDs to be ready, then runs [Kyverno Chainsaw](https://kyverno.github.io/chainsaw/) tests from `tests/chainsaw/`.
+k3d is used instead of kind because kind requires a writable `/sys/fs/cgroup` (systemd as PID 1), which is unavailable in GitLab CI Docker executors.
+CRD stubs for ArgoCD and External Secrets Operator live in `tests/crds/` so compositions can be exercised without those controllers installed.
+
+```
+tests/
+  render/<xrd>/            # Render test artifacts
+    functions.yaml         # Docker runtime (local)
+    functions.ci.yaml      # Development/gRPC runtime (CI — no Docker daemon)
+    expected/
+      rendered.yaml        # Golden file — commit after intentional changes
+  chainsaw/
+    chainsaw.yaml          # Global Chainsaw configuration (timeouts)
+    <xrd>/
+      chainsaw-test.yaml   # Test steps: apply XR, assert composed resources
+      xr.yaml              # Example XR applied by the test
+      assert/              # Partial-match assertions for each composed resource
+  crds/                    # Minimal CRD stubs for external API types (ArgoCD, ESO)
+```
 
 ### Adding a New XRD
 

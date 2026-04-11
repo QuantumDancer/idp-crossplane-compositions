@@ -1,0 +1,54 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: application-environment
+spec:
+  steps:
+  - name: apply-xr
+    try:
+    - apply:
+        file: xr.yaml
+    - assert:
+        file: assert/namespace.yaml
+    - assert:
+        file: assert/argocd-application.yaml
+    - assert:
+        file: assert/argocd-repo-secret.yaml
+    # Verify the XR itself reached Ready=True. Composed resources can exist while
+    # the XR stays NotReady if the pipeline has an error — this catches that gap.
+    # Assert Synced=True (composition pipeline ran without error) rather than
+    # Ready=True. ArgoCD/ESO controllers don't run in this test cluster so
+    # composed resources stay unhealthy and Ready never flips.
+    # JMESPath at root avoids double-nesting: nesting under status: would make
+    # Chainsaw evaluate expressions relative to the status object, turning
+    # status.conditions into status.status.conditions (always null).
+    - assert:
+        resource:
+          apiVersion: idp.rottler.io/v1alpha1
+          kind: ApplicationEnvironment
+          metadata:
+            name: team-a-order-management-order-service
+          (status.conditions[?type=='Synced'].status | [0]): "True"
+    catch:
+    # Dump XR status and Crossplane events to surface pipeline errors.
+    # ApplicationEnvironment is cluster-scoped so we use a script rather than
+    # describe (which scopes to the test namespace by default).
+    - script:
+        content: |
+          kubectl describe applicationenvironment team-a-order-management-order-service || true
+          echo "--- Crossplane events ---"
+          kubectl get events -A --field-selector reason=ComposeResources 2>/dev/null || true
+    - podLogs:
+        namespace: crossplane-system
+        selector: app=crossplane
+    finally:
+    # The ArgoCD Application has a resources-finalizer set by the composition.
+    # Without ArgoCD running in this test cluster the finalizer is never cleared,
+    # so Crossplane can't delete the composed resource and the XR deletion stalls.
+    # Stripping the finalizer here allows clean teardown.
+    - script:
+        content: |
+          kubectl patch application team-a-order-management-order-service \
+            -n argocd \
+            --type=json \
+            -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true

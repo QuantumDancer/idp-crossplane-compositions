@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: team-a-order-management-order-service
+  namespace: argocd
+spec:
+  project: team-a
+  source:
+    repoURL: https://gitlab.home.rottlr.de/idp/team-a/order-management-order-service-deployment.git
+    # homelab environment maps to "development" targetRevision
+    targetRevision: development
+  destination:
+    namespace: team-a-order-management-order-service
