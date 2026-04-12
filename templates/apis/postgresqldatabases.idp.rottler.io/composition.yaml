@@ -1,0 +1,39 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgresqldatabase-cnpg
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: postgresql-database
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: postgresql-database
+    # Crossplane integration
+    crossplane.io/xrd: postgresqldatabases.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: PostgreSQLDatabase
+  mode: Pipeline
+  pipeline:
+  - step: create-database-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- .Files.Get "files/postgresqldatabases.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/postgresqldatabases.idp.rottler.io/credentials.yaml" | nindent 10 }}
+          {{- .Files.Get "files/postgresqldatabases.idp.rottler.io/cnpg-cluster.yaml" | nindent 10 }}
+          {{- .Files.Get "files/postgresqldatabases.idp.rottler.io/status.yaml" | nindent 10 }}
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready

@@ -1,0 +1,101 @@
+---
+apiVersion: idp.rottler.io/v1alpha1
+kind: PostgreSQLDatabase
+metadata:
+  name: my-app-dev-db
+  namespace: my-app-dev
+status:
+  conditions:
+  - lastTransitionTime: "2024-01-01T00:00:00Z"
+    message: 'Unready resources: cluster, external-secret'
+    reason: Creating
+    status: "False"
+    type: Ready
+  connectionDetailsSecretRef: my-app-dev-db-credentials
+  currentPrimary: null
+  endpoint: null
+  phase: Provisioning
+  readOnlyEndpoint: null
+  ready: false
+  readyInstances: 0
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: cluster
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: my-app-dev-db
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: postgresql-database
+    crossplane.io/composite: my-app-dev-db
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+    idp.rottler.io/tier: dev
+  name: my-app-dev-db
+  namespace: my-app-dev
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgreSQLDatabase
+    name: my-app-dev-db
+    uid: ""
+spec:
+  bootstrap:
+    initdb:
+      database: my-app-dev-db
+      owner: my-app-dev-db
+      secret:
+        name: my-app-dev-db-credentials
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  instances: 1
+  monitoring:
+    enablePodMonitor: true
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  storage:
+    size: 2Gi
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: external-secret
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: my-app-dev-db
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: postgresql-database
+    crossplane.io/composite: my-app-dev-db
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+    idp.rottler.io/tier: dev
+  name: my-app-dev-db-external-secret
+  namespace: my-app-dev
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgreSQLDatabase
+    name: my-app-dev-db
+    uid: ""
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: idp/databases/my-app-dev/my-app-dev-db
+      metadataPolicy: None
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-app-dev-db-credentials

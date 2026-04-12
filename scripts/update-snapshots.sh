@@ -12,7 +12,9 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Read the pinned version from CI config so there is a single source of truth.
 REQUIRED_VERSION=$(grep 'CROSSPLANE_VERSION:' "$REPO_ROOT/.gitlab-ci.yml" \
   | awk -F'"' '{print $2}')
-ACTUAL_VERSION=$(crossplane --version 2>&1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+# crossplane version exits 1 when not connected to a cluster; pipefail would
+# abort the script before we can compare versions, so we suppress that exit code.
+ACTUAL_VERSION=$({ crossplane version 2>&1 || true; } | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 
 if [[ "$ACTUAL_VERSION" != "$REQUIRED_VERSION" ]]; then
   echo "ERROR: crossplane CLI is ${ACTUAL_VERSION:-not found}, but CI pins ${REQUIRED_VERSION}."

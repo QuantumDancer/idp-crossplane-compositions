@@ -1,0 +1,52 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $databaseName := .observed.composite.resource.spec.databaseName | default $xrName -}}
+{{- $owner := .observed.composite.resource.spec.owner | default $xrName -}}
+{{- $secretType := .observed.composite.resource.spec.connectionSecret.type | default "pull" -}}
+{{- $vaultPath := .observed.composite.resource.spec.connectionSecret.vaultPath | default (printf "idp/databases/%s/%s" $namespace $databaseName) -}}
+{{- $environment := index .observed.composite.resource.metadata.labels "idp.rottler.io/environment" | default "homelab" -}}
+{{- $computeTier := .observed.composite.resource.spec.compute -}}
+{{- $secretName := printf "%s-credentials" $xrName -}}
+
+{{- $cpuRequest := "" -}}
+{{- $memoryRequest := "" -}}
+{{- $memoryLimit := "" -}}
+{{- if eq $environment "homelab" -}}
+  {{- if eq $computeTier "small" -}}
+    {{- $cpuRequest = "100m" -}}
+    {{- $memoryRequest = "512Mi" -}}
+    {{- $memoryLimit = "512Mi" -}}
+  {{- else if eq $computeTier "medium" -}}
+    {{- $cpuRequest = "500m" -}}
+    {{- $memoryRequest = "1Gi" -}}
+    {{- $memoryLimit = "1Gi" -}}
+  {{- else if eq $computeTier "large" -}}
+    {{- $cpuRequest = "1000m" -}}
+    {{- $memoryRequest = "2Gi" -}}
+    {{- $memoryLimit = "2Gi" -}}
+  {{- end -}}
+{{- else if eq $environment "aws" -}}
+  {{- if eq $computeTier "small" -}}
+    {{- $cpuRequest = "1" -}}
+    {{- $memoryRequest = "4Gi" -}}
+    {{- $memoryLimit = "4Gi" -}}
+  {{- else if eq $computeTier "medium" -}}
+    {{- $cpuRequest = "2" -}}
+    {{- $memoryRequest = "8Gi" -}}
+    {{- $memoryLimit = "8Gi" -}}
+  {{- else if eq $computeTier "large" -}}
+    {{- $cpuRequest = "4" -}}
+    {{- $memoryRequest = "16Gi" -}}
+    {{- $memoryLimit = "16Gi" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $labels := dict
+  "app.kubernetes.io/name" "postgresql-database"
+  "app.kubernetes.io/instance" $xrName
+  "app.kubernetes.io/component" "database"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+  "idp.rottler.io/environment" (index .observed.composite.resource.metadata.labels "idp.rottler.io/environment")
+  "idp.rottler.io/tier" (index .observed.composite.resource.metadata.labels "idp.rottler.io/tier")
+-}}

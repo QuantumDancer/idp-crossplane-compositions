@@ -1,0 +1,33 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: cluster
+spec:
+  # HA mode: 3 instances (1 primary + 2 replicas); non-HA: 1 instance.
+  instances: {{ if .observed.composite.resource.spec.ha }}3{{ else }}1{{ end }}
+  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .observed.composite.resource.spec.version }}
+  storage:
+    size: {{ .observed.composite.resource.spec.storage }}
+  resources:
+    requests:
+      cpu: {{ $cpuRequest }}
+      memory: {{ $memoryRequest }}
+    limits:
+      memory: {{ $memoryLimit }}
+  monitoring:
+    enablePodMonitor: true
+  bootstrap:
+    initdb:
+      database: {{ $databaseName }}
+      owner: {{ $owner }}
+      # Reference the credentials secret regardless of pull or push mode —
+      # in pull mode it is created by the ExternalSecret; in push mode by the Secret resource.
+      secret:
+        name: {{ $secretName }}

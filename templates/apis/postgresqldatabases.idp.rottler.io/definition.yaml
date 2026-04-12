@@ -1,0 +1,133 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: postgresqldatabases.idp.rottler.io
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: postgresql-database
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: postgresql-database
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: PostgreSQLDatabase
+    plural: postgresqldatabases
+  defaultCompositionRef:
+    name: postgresqldatabase-cnpg
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            PostgreSQLDatabase provisions a CloudNativePG cluster with credential
+            management via External Secrets Operator.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                compute:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  description: |
+                    Compute tier for CPU and memory.
+
+                    Homelab:
+                    - small:  100m CPU, 512 MiB RAM
+                    - medium: 500m CPU, 1 GiB RAM
+                    - large:  1000m CPU, 2 GiB RAM
+
+                    AWS (dev/prod):
+                    - small:  2 vCPU, 8 GiB RAM
+                    - medium: 4 vCPU, 16 GiB RAM
+                    - large:  8 vCPU, 32 GiB RAM
+                storage:
+                  type: string
+                  pattern: '^[0-9]+(Mi|Gi)$'
+                  default: "2Gi"
+                  description: "Storage size (e.g., \"500Mi\", \"2Gi\", \"10Gi\"). Supported units: Mi, Gi."
+                version:
+                  type: string
+                  enum:
+                    - "13"
+                    - "14"
+                    - "15"
+                    - "16"
+                    - "17"
+                  default: "17"
+                  description: PostgreSQL major version.
+                ha:
+                  type: boolean
+                  default: false
+                  description: |
+                    Enable high availability. Creates three instances (one primary,
+                    two read replicas) when true.
+                databaseName:
+                  type: string
+                  description: "Name of the database to create. Defaults to the XR name."
+                  pattern: '^[a-zA-Z_][a-zA-Z0-9_]*$'
+                owner:
+                  type: string
+                  description: "Database owner username. Defaults to the XR name."
+                  pattern: '^[a-zA-Z_][a-zA-Z0-9_]*$'
+                connectionSecret:
+                  type: object
+                  description: "Credential management configuration."
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - pull
+                        - push
+                      default: pull
+                      description: |
+                        Secret management mode:
+                        - pull: pull existing credentials from Vault (recommended for production)
+                        - push: generate a random password and push it to Vault (convenient for dev/test)
+                    vaultPath:
+                      type: string
+                      description: "Vault KV v2 path for credentials (relative to 'secrets/' mount). Defaults to: idp/databases/{namespace}/{databaseName}"
+              required:
+                - compute
+                - storage
+                - version
+            status:
+              type: object
+              properties:
+                phase:
+                  description: Current phase of the database (e.g., Provisioning, Ready, Failed).
+                  type: string
+                ready:
+                  description: Whether the database is ready for connections.
+                  type: boolean
+                readyInstances:
+                  description: Number of ready instances.
+                  type: integer
+                connectionDetailsSecretRef:
+                  description: Name of the Kubernetes Secret containing connection details.
+                  type: string
+                endpoint:
+                  description: Primary (read-write) service endpoint.
+                  type: string
+                readOnlyEndpoint:
+                  description: Read-only service endpoint (HA configurations only).
+                  type: string
+                currentPrimary:
+                  description: Name of the current primary instance.
+                  type: string
+              required:
+                - ready
+                - readyInstances
+                - connectionDetailsSecretRef

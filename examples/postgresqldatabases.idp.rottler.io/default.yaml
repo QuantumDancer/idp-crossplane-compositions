@@ -1,0 +1,14 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: PostgreSQLDatabase
+metadata:
+  name: my-app-dev-db
+  namespace: my-app-dev
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/tier: dev
+spec:
+  compute: small
+  storage: 2Gi
+  version: "17"
+  ha: false

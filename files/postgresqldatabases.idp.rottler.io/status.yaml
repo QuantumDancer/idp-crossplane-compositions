@@ -1,0 +1,12 @@
+---
+# Patch the XR status from the CNPG Cluster's observed state.
+apiVersion: idp.rottler.io/v1alpha1
+kind: PostgreSQLDatabase
+status:
+  phase: {{ get (getComposedResource . "cluster").status "phase" | default "Provisioning" }}
+  readyInstances: {{ get (getComposedResource . "cluster").status "readyInstances" | default 0 }}
+  ready: {{ $cluster := getComposedResource . "cluster" }}{{ $ready := false }}{{ range $cluster.status.conditions }}{{ if and (eq .type "Ready") (eq .status "True") }}{{ $ready = true }}{{ end }}{{ end }}{{ $ready }}
+  connectionDetailsSecretRef: {{ $secretName }}
+  endpoint: {{ $endpoint := get (getComposedResource . "cluster").status "writeService" }}{{ if $endpoint }}{{ $endpoint }}{{ end }}
+  readOnlyEndpoint: {{ $readEndpoint := get (getComposedResource . "cluster").status "readService" }}{{ if $readEndpoint }}{{ $readEndpoint }}{{ end }}
+  currentPrimary: {{ $primary := get (getComposedResource . "cluster").status "currentPrimary" }}{{ if $primary }}{{ $primary }}{{ end }}
