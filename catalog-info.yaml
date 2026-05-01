@@ -1,0 +1,18 @@
+# Backstage catalog entry for the compositions repo.
+# The GitLab entity provider auto-discovers this file.
+# The techdocs-ref annotation points to the mkdocs.yml at the repo root.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: crossplane-compositions
+  title: IDP Crossplane Compositions
+  description: Crossplane XRDs and Compositions for IDP infrastructure self-service
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    gitlab.com/project-slug: idp/platform/idp-crossplane-compositions
+    gitlab.com/instance: gitlab.home.rottlr.de
+spec:
+  type: library
+  lifecycle: production
+  owner: group:platform
+  system: idp

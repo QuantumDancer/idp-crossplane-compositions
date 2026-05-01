@@ -1,0 +1,8 @@
+site_name: IDP Crossplane Compositions
+plugins:
+  - techdocs-core
+nav:
+  - Overview: index.md
+  - XRDs:
+    - PostgreSQLDatabase: xrds/postgresql-database.md
+    - ApplicationEnvironment: xrds/application-environment.md
