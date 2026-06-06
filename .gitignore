@@ -1,1 +1,2 @@
 site/
+tests/render/*/actual.yaml

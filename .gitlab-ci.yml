@@ -19,7 +19,7 @@ variables:
   CRANE_VERSION: "v0.21.5"
   MKDOCS_TECHDOCS_CORE_VERSION: "1.4.2"
   TECHDOCS_CLI_VERSION: "1.9.2"
-  CROSSPLANE_VERSION: "v2.2.0"
+  CROSSPLANE_VERSION: "v2.3.1"
   K3D_VERSION: "v5.8.3"
   KUBECTL_VERSION: "v1.35.3"
   HELM_VERSION: "v3.20.2"
@@ -52,13 +52,13 @@ render-test:
     # Export and extract each function binary, then start as a local gRPC server.
     # functions.ci.yaml targets these servers via the Development runtime so
     # crossplane render never needs to launch Docker containers.
-    - crane export xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.0 /tmp/fgt.tar
+    - crane export xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.1 /tmp/fgt.tar
     - |
       func_path=$(tar -tf /tmp/fgt.tar | grep -E '^\.?/?function$' | head -1)
       tar -xf /tmp/fgt.tar -C /usr/local/bin "$func_path"
       mv /usr/local/bin/function /usr/local/bin/function-go-templating
       chmod +x /usr/local/bin/function-go-templating
-    - crane export xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.6.3 /tmp/far.tar
+    - crane export xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.6.5 /tmp/far.tar
     - |
       func_path=$(tar -tf /tmp/far.tar | grep -E '^\.?/?function$' | head -1)
       tar -xf /tmp/far.tar -C /usr/local/bin "$func_path"

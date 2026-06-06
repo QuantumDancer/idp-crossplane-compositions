@@ -3,9 +3,31 @@ apiVersion: idp.rottler.io/v1alpha1
 kind: ApplicationEnvironment
 metadata:
   name: team-a-order-management-order-service
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      name: team-a-order-management-order-service
+      namespace: argocd
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: repo-team-a-order-management-order-service-deployment
+      namespace: argocd
+    - apiVersion: v1
+      kind: Namespace
+      name: team-a-order-management-order-service
 status:
   conditions:
-  - lastTransitionTime: "2024-01-01T00:00:00Z"
+  - lastTransitionTime: "2026-06-06T21:03:45Z"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "2026-06-06T21:03:45Z"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "2026-06-06T21:03:45Z"
     message: 'Unready resources: argocd-application, argocd-repo-secret, and namespace'
     reason: Creating
     status: "False"
@@ -28,7 +50,7 @@ metadata:
     controller: true
     kind: ApplicationEnvironment
     name: team-a-order-management-order-service
-    uid: ""
+    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
 spec:
   destination:
     namespace: team-a-order-management-order-service
@@ -63,7 +85,7 @@ metadata:
     controller: true
     kind: ApplicationEnvironment
     name: team-a-order-management-order-service
-    uid: ""
+    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
 spec:
   dataFrom:
   - extract:
@@ -101,5 +123,5 @@ metadata:
     controller: true
     kind: ApplicationEnvironment
     name: team-a-order-management-order-service
-    uid: ""
+    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
 spec: {}
