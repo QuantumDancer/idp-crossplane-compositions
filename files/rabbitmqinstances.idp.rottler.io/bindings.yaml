@@ -1,0 +1,25 @@
+{{- range $queues }}
+{{- if .exchange }}
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: {{ $xrName }}-binding-{{ .name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: binding-{{ .name }}
+spec:
+  vhost: {{ $vhostName }}
+  source: {{ .exchange }}
+  destination: {{ .name }}
+  destinationType: queue
+  routingKey: {{ .routingKey | default "#" }}
+  rabbitmqClusterReference:
+    name: {{ $clusterName }}
+    namespace: {{ $clusterNamespace }}
+{{- end }}
+{{- end }}

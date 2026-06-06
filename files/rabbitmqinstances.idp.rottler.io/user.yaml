@@ -1,0 +1,43 @@
+---
+# Create the connection secret first so the User resource can import it.
+# randAlphaNum produces a new value on each reconcile, but Crossplane's
+# observed state is used after the first successful apply, so the password
+# is stable after creation.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: connection-secret
+type: Opaque
+stringData:
+  username: {{ $xrName }}
+  password: {{ $password }}
+  host: {{ $clusterName }}.{{ $clusterNamespace }}.svc
+  port: "5672"
+  vhost: {{ $vhostName }}
+  uri: amqp://{{ $xrName }}:{{ $password }}@{{ $clusterName }}.{{ $clusterNamespace }}.svc:5672/{{ $vhostName }}
+---
+# User references the connection secret so RabbitMQ picks up the generated credentials.
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: {{ $xrName }}-user
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: user
+spec:
+  rabbitmqClusterReference:
+    name: {{ $clusterName }}
+    namespace: {{ $clusterNamespace }}
+  importCredentialsSecret:
+    name: {{ $secretName }}

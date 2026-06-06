@@ -1,0 +1,15 @@
+---
+# Patch the XR status from the vhost's observed state.
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQInstance
+status:
+  {{- $vhost := getComposedResource . "vhost" -}}
+  {{- $ready := false -}}
+  {{- range $vhost.status.conditions -}}
+    {{- if and (eq .type "Ready") (eq .status "True") -}}
+      {{- $ready = true -}}
+    {{- end -}}
+  {{- end }}
+  ready: {{ $ready }}
+  phase: {{ if $ready }}Ready{{ else }}Provisioning{{ end }}
+  connectionSecretRef: {{ $secretName }}

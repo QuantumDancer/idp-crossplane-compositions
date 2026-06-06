@@ -1,0 +1,112 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: rabbitmqinstances.idp.rottler.io
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: rabbitmq-instance
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: rabbitmq-instance
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: RabbitMQInstance
+    plural: rabbitmqinstances
+  defaultCompositionRef:
+    name: rabbitmqinstance-topology
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            RabbitMQInstance provisions a logical messaging setup on a team's
+            RabbitMQCluster: a dedicated vhost, user with scoped permissions,
+            exchanges, queues, bindings, and a connection secret. One instance
+            per service.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                clusterRef:
+                  type: object
+                  description: Reference to the team's RabbitMQCluster.
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the RabbitMQCluster resource.
+                    namespace:
+                      type: string
+                      description: Namespace where the RabbitMQCluster lives (the team's infra namespace).
+                  required:
+                    - name
+                    - namespace
+                durability:
+                  type: string
+                  enum:
+                    - persistent
+                    - ephemeral
+                  default: persistent
+                  description: |
+                    Queue and exchange durability.
+                    persistent (default): durable, survives broker restart.
+                    ephemeral: non-durable, lost on broker restart.
+                exchanges:
+                  type: array
+                  description: Exchanges to create in the vhost. Optional; only needed for topic/fanout routing.
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Exchange name in RabbitMQ.
+                      type:
+                        type: string
+                        enum:
+                          - topic
+                          - fanout
+                          - direct
+                        default: topic
+                        description: Exchange type.
+                    required:
+                      - name
+                queues:
+                  type: array
+                  description: Queues to create in the vhost.
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Queue name in RabbitMQ.
+                      exchange:
+                        type: string
+                        description: Exchange to bind this queue to. If omitted the queue is unbound (receives messages via the default exchange).
+                      routingKey:
+                        type: string
+                        description: Routing key for the binding. Defaults to "#" (matches all) for topic exchanges.
+                    required:
+                      - name
+              required:
+                - clusterRef
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: Current lifecycle phase (Provisioning, Ready, Failed).
+                ready:
+                  type: boolean
+                  description: Whether the vhost and user are provisioned and ready.
+                connectionSecretRef:
+                  type: string
+                  description: Name of the Kubernetes Secret containing AMQP connection details.
+              required:
+                - ready

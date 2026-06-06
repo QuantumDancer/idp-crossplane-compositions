@@ -1,0 +1,57 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane:custom:rabbitmq-instance
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: rabbitmq-instance
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: rabbitmq-instance
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - vhosts
+  - users
+  - permissions
+  - exchanges
+  - queues
+  - bindings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - vhosts/status
+  - users/status
+  - permissions/status
+  - exchanges/status
+  - queues/status
+  - bindings/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete

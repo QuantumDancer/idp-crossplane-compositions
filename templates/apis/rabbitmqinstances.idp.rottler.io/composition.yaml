@@ -1,0 +1,40 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: rabbitmqinstance-topology
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: rabbitmq-instance
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: rabbitmq-instance
+    crossplane.io/xrd: rabbitmqinstances.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: RabbitMQInstance
+  mode: Pipeline
+  pipeline:
+  - step: create-instance-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/vhost.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/user.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/permission.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/exchanges.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/queues.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/bindings.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqinstances.idp.rottler.io/status.yaml" | nindent 10 }}
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready

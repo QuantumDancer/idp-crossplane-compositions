@@ -1,0 +1,54 @@
+---
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: team-a-rabbitmq
+status:
+  conditions:
+  - lastTransitionTime: "2026-06-06T21:03:48Z"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "2026-06-06T21:03:48Z"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "2026-06-06T21:03:48Z"
+    message: 'Unready resources: rabbitmq-cluster'
+    reason: Creating
+    status: "False"
+    type: Ready
+  phase: Provisioning
+  ready: false
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: rabbitmq-cluster
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: team-a-rabbitmq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-cluster
+    crossplane.io/composite: team-a-rabbitmq
+    idp.rottler.io/team: team-a
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQCluster
+    name: team-a-rabbitmq
+    uid: 3595a5c9-911d-5e33-996b-2671feae0709
+spec:
+  image: rabbitmq:3.13-management
+  replicas: 1

@@ -1,0 +1,14 @@
+---
+# Patch the XR status from the RabbitmqCluster's observed state.
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQCluster
+status:
+  {{- $cluster := getComposedResource . "rabbitmq-cluster" -}}
+  {{- $ready := false -}}
+  {{- range $cluster.status.conditions -}}
+    {{- if and (eq .type "AllReplicasReady") (eq .status "True") -}}
+      {{- $ready = true -}}
+    {{- end -}}
+  {{- end }}
+  ready: {{ $ready }}
+  phase: {{ if $ready }}Running{{ else }}Provisioning{{ end }}

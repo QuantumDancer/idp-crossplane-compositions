@@ -1,0 +1,11 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+  labels:
+    idp.rottler.io/team: team-a
+spec:
+  team: team-a
+  ha: false
+  version: "3.13"

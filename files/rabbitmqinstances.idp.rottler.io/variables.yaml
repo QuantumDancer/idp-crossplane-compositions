@@ -1,0 +1,19 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $clusterName := .observed.composite.resource.spec.clusterRef.name -}}
+{{- $clusterNamespace := .observed.composite.resource.spec.clusterRef.namespace -}}
+{{- $vhostName := $namespace -}}
+{{- $secretName := printf "%s-connection" $xrName -}}
+{{- $durability := .observed.composite.resource.spec.durability | default "persistent" -}}
+{{- $durable := eq $durability "persistent" -}}
+{{- $exchanges := .observed.composite.resource.spec.exchanges | default (list) -}}
+{{- $queues := .observed.composite.resource.spec.queues | default (list) -}}
+{{- $password := randAlphaNum 32 -}}
+
+{{- $labels := dict
+  "app.kubernetes.io/name" "rabbitmq-instance"
+  "app.kubernetes.io/instance" $xrName
+  "app.kubernetes.io/component" "messaging"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+-}}

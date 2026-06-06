@@ -1,0 +1,35 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: rabbitmqcluster-rabbitmq
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: rabbitmq-cluster
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: rabbitmq-cluster
+    crossplane.io/xrd: rabbitmqclusters.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: RabbitMQCluster
+  mode: Pipeline
+  pipeline:
+  - step: create-cluster-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/cluster.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/status.yaml" | nindent 10 }}
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready

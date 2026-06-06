@@ -1,0 +1,23 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: {{ $xrName }}-permission
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: permission
+spec:
+  vhost: {{ $vhostName }}
+  userReference:
+    name: {{ $xrName }}-user
+  rabbitmqClusterReference:
+    name: {{ $clusterName }}
+    namespace: {{ $clusterNamespace }}
+  permissions:
+    read: ".*"
+    write: ".*"
+    configure: ".*"

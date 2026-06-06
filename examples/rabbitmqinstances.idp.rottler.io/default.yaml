@@ -1,0 +1,22 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQInstance
+metadata:
+  name: order-service-mq
+  namespace: team-a-order-management-order-service
+  labels:
+    idp.rottler.io/team: team-a
+spec:
+  clusterRef:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+  durability: persistent
+  exchanges:
+    - name: orders
+      type: topic
+  queues:
+    - name: order-created
+      exchange: orders
+      routingKey: "order.created"
+    - name: order-processed
+      exchange: orders
+      routingKey: "order.processed"

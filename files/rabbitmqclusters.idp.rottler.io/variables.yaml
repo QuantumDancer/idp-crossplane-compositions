@@ -1,0 +1,16 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $ha := .observed.composite.resource.spec.ha | default false -}}
+{{- $version := .observed.composite.resource.spec.version | default "3.13" -}}
+{{- $replicas := 1 -}}
+{{- if $ha -}}
+  {{- $replicas = 3 -}}
+{{- end -}}
+
+{{- $labels := dict
+  "app.kubernetes.io/name" "rabbitmq-cluster"
+  "app.kubernetes.io/instance" $xrName
+  "app.kubernetes.io/component" "messaging"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+-}}

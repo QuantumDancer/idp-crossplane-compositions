@@ -1,0 +1,63 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: rabbitmqclusters.idp.rottler.io
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: rabbitmq-cluster
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: rabbitmq-cluster
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: RabbitMQCluster
+    plural: rabbitmqclusters
+  defaultCompositionRef:
+    name: rabbitmqcluster-rabbitmq
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            RabbitMQCluster provisions a dedicated RabbitMQ broker for a team.
+            Lives in the team's shared infra namespace and is referenced by
+            RabbitMQInstance resources in per-service namespaces.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                team:
+                  type: string
+                  description: Team name. Must match the idp.rottler.io/team label.
+                ha:
+                  type: boolean
+                  default: false
+                  description: |
+                    Enable high availability.
+                    false (default): 1 replica.
+                    true: 3 replicas with pod anti-affinity across nodes and quorum queue defaults.
+                version:
+                  type: string
+                  default: "3.13"
+                  description: RabbitMQ version to deploy (e.g. "3.13").
+              required:
+                - team
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: Current lifecycle phase of the cluster (Provisioning, Running, Failed).
+                ready:
+                  type: boolean
+                  description: Whether all cluster replicas are ready.
+              required:
+                - ready

@@ -1,0 +1,24 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: rabbitmq-cluster
+spec:
+  replicas: {{ $replicas }}
+  image: rabbitmq:{{ $version }}-management
+  {{- if $ha }}
+  # Spread replicas across nodes to survive single-node failures.
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: {{ $xrName }}
+        topologyKey: kubernetes.io/hostname
+  {{- end }}

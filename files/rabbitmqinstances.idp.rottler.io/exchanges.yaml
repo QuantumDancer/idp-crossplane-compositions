@@ -1,0 +1,22 @@
+{{- range $exchanges }}
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: {{ $xrName }}-exchange-{{ .name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: exchange-{{ .name }}
+spec:
+  name: {{ .name }}
+  vhost: {{ $vhostName }}
+  type: {{ .type | default "topic" }}
+  durable: {{ $durable }}
+  rabbitmqClusterReference:
+    name: {{ $clusterName }}
+    namespace: {{ $clusterNamespace }}
+{{- end }}
