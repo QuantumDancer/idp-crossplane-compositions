@@ -19,36 +19,19 @@ spec:
       name: team-a-order-management-order-service
 status:
   conditions:
-  - lastTransitionTime: "2026-06-07T21:38:07Z"
+  - lastTransitionTime: "2026-06-07T21:50:03Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-07T21:38:07Z"
+  - lastTransitionTime: "2026-06-07T21:50:03Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-07T21:38:07Z"
+  - lastTransitionTime: "2026-06-07T21:50:03Z"
     message: 'Unready resources: argocd-application, argocd-repo-secret, and namespace'
     reason: Creating
     status: "False"
     type: Ready
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: namespace
-  labels:
-    crossplane.io/composite: team-a-order-management-order-service
-  name: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: ApplicationEnvironment
-    name: team-a-order-management-order-service
-    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
-spec: {}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -125,3 +108,20 @@ spec:
       metadata:
         labels:
           argocd.argoproj.io/secret-type: repository
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: namespace
+  labels:
+    crossplane.io/composite: team-a-order-management-order-service
+  name: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ApplicationEnvironment
+    name: team-a-order-management-order-service
+    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
+spec: {}

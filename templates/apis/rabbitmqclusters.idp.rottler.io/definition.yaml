@@ -33,6 +33,11 @@ spec:
           properties:
             spec:
               type: object
+              # Prevent ha from being set back to false once true — the RabbitMQ
+              # operator does not support scaling down and will error permanently.
+              x-kubernetes-validations:
+                - rule: "!has(oldSelf.ha) || oldSelf.ha == false || self.ha == true"
+                  message: "spec.ha cannot be changed from true to false after creation"
               properties:
                 team:
                   type: string
@@ -40,14 +45,11 @@ spec:
                 ha:
                   type: boolean
                   default: false
-                  x-kubernetes-validations:
-                    - rule: "!has(oldSelf) || !has(oldSelf.ha) || self.ha == oldSelf.ha"
-                      message: "spec.ha is immutable after the cluster is created"
                   description: |
                     Enable high availability.
                     false (default): 1 replica.
                     true: 3 replicas with pod anti-affinity across nodes and quorum queue defaults.
-                    Immutable after creation — the RabbitMQ operator does not support scaling down.
+                    Immutable once set to true — the RabbitMQ operator does not support scaling down.
                 version:
                   type: string
                   default: "3.13"
