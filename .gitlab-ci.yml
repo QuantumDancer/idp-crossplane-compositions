@@ -128,7 +128,5 @@ techdocs-publish:
         --awsEndpoint "${TECHDOCS_S3_ENDPOINT}"
         --awsS3ForcePathStyle
         --entity default/Component/crossplane-compositions
-  variables:
-    AWS_REGION: "${TECHDOCS_S3_REGION}"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
