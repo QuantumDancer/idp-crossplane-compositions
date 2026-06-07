@@ -12,8 +12,10 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: permission
 spec:
   vhost: {{ $vhostName }}
-  userReference:
-    name: {{ $xrName }}-user
+  # Use 'user' (username string) rather than 'userReference' (resource ref). The topology
+  # operator calls SetControllerReference when a userReference is present, which conflicts
+  # with Crossplane's own controller ownerReference on this composed resource.
+  user: {{ $xrName }}
   rabbitmqClusterReference:
     name: {{ $clusterName }}
     namespace: {{ $clusterNamespace }}
