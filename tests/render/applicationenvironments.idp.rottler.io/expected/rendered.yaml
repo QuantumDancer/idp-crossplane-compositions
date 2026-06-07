@@ -19,15 +19,15 @@ spec:
       name: team-a-order-management-order-service
 status:
   conditions:
-  - lastTransitionTime: "2026-06-07T21:50:03Z"
+  - lastTransitionTime: "2026-06-07T21:54:40Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-07T21:50:03Z"
+  - lastTransitionTime: "2026-06-07T21:54:40Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-07T21:50:03Z"
+  - lastTransitionTime: "2026-06-07T21:54:40Z"
     message: 'Unready resources: argocd-application, argocd-repo-secret, and namespace'
     reason: Creating
     status: "False"

@@ -15,15 +15,15 @@ spec:
       name: my-app-dev-db
 status:
   conditions:
-  - lastTransitionTime: "2026-06-07T21:50:05Z"
+  - lastTransitionTime: "2026-06-07T21:54:42Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-07T21:50:05Z"
+  - lastTransitionTime: "2026-06-07T21:54:42Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-07T21:50:05Z"
+  - lastTransitionTime: "2026-06-07T21:54:42Z"
     message: 'Unready resources: cluster, external-secret'
     reason: Creating
     status: "False"
