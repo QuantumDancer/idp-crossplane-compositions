@@ -10,3 +10,5 @@ spec:
   ha: false
   version: "3.13"
   storageSize: small
+  allowedNamespaces:
+    - team-a-order-management-order-service

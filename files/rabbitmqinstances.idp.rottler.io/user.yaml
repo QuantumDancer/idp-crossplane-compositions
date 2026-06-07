@@ -1,8 +1,5 @@
 ---
 # Create the connection secret first so the User resource can import it.
-# randAlphaNum produces a new value on each reconcile, but Crossplane's
-# observed state is used after the first successful apply, so the password
-# is stable after creation.
 apiVersion: v1
 kind: Secret
 metadata:

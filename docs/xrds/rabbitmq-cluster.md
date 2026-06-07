@@ -17,12 +17,13 @@ The RabbitmqCluster name follows `<team>-rabbitmq`. In HA mode, a `PodDisruption
 
 ## Spec Fields
 
-| Field         | Type    | Required | Default   | Description                                                                                           |
-| ------------- | ------- | -------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| `team`        | string  | **Yes**  | —         | Team name. Must match the `idp.rottler.io/team` label.                                                |
-| `ha`          | boolean | No       | `false`   | `false`: 1 replica. `true`: 3 replicas with pod anti-affinity across nodes and quorum queue defaults. |
-| `version`     | string  | No       | `"3.13"`  | RabbitMQ container image version (e.g. `"3.13"`).                                                     |
-| `storageSize` | enum    | No       | `"small"` | Persistent volume size: `small` (1 Gi), `medium` (10 Gi), `large` (20 Gi), `x-large` (50 Gi).       |
+| Field                | Type     | Required | Default   | Description                                                                                                                      |
+| -------------------- | -------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `team`               | string   | **Yes**  | —         | Team name. Must match the `idp.rottler.io/team` label.                                                                           |
+| `allowedNamespaces`  | string[] | **Yes**  | —         | Namespaces permitted to create topology resources against this cluster. List every `RabbitMQInstance` namespace, or `["*"]` for all. |
+| `ha`                 | boolean  | No       | `false`   | `false`: 1 replica. `true`: 3 replicas with pod anti-affinity across nodes. **Immutable after creation.**                       |
+| `version`            | string   | No       | `"3.13"`  | RabbitMQ container image version (e.g. `"3.13"`).                                                                                |
+| `storageSize`        | enum     | No       | `"small"` | Persistent volume size: `small` (1 Gi), `medium` (10 Gi), `large` (20 Gi), `x-large` (50 Gi).                                  |
 
 ## Quick Start
 
@@ -38,6 +39,9 @@ metadata:
     idp.rottler.io/team: team-a
 spec:
   team: team-a
+  allowedNamespaces:
+    - team-a-order-service
+    - team-a-payment-service
 ```
 
 With HA enabled and production-sized storage:
@@ -55,6 +59,9 @@ spec:
   ha: true
   version: "3.13"
   storageSize: large
+  allowedNamespaces:
+    - team-a-order-service
+    - team-a-payment-service
 ```
 
 ## HA Mode
@@ -65,6 +72,9 @@ spec:
 | `ha: true`  | 3        | Spread across nodes | Yes           |
 
 Use `ha: false` on homelab or in development. Use `ha: true` for production workloads where broker restarts must not cause message loss.
+
+!!! warning "ha is immutable"
+    The RabbitMQ Cluster Operator does not support scaling down. Once `ha: true` is set, it cannot be changed to `false` — the API server will reject the update. To change HA mode, delete and recreate the cluster.
 
 ## Status Fields
 

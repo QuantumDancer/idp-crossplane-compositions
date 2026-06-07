@@ -36,15 +36,15 @@ spec:
       name: order-service-mq-connection
 status:
   conditions:
-  - lastTransitionTime: "2026-06-06T21:03:49Z"
+  - lastTransitionTime: "2026-06-07T21:38:14Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-06T21:03:49Z"
+  - lastTransitionTime: "2026-06-07T21:38:14Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-06T21:03:49Z"
+  - lastTransitionTime: "2026-06-07T21:38:14Z"
     message: 'Unready resources: binding-order-created, binding-order-processed, connection-secret,
       and 6 more'
     reason: Creating
@@ -83,7 +83,37 @@ spec:
     namespace: team-a-infra
   routingKey: order.processed
   source: orders
-  vhost: team-a-order-management-order-service
+  vhost: team-a-order-management-order-service-order-service-mq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: exchange-orders
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-exchange-orders
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+spec:
+  durable: true
+  name: orders
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+  type: topic
+  vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Permission
@@ -116,91 +146,7 @@ spec:
     namespace: team-a-infra
   userReference:
     name: order-service-mq-user
-  vhost: team-a-order-management-order-service
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Queue
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: queue-order-created
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-queue-order-created
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  durable: true
-  name: order-created
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
-  vhost: team-a-order-management-order-service
----
-apiVersion: rabbitmq.com/v1beta1
-kind: User
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: user
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-user
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  importCredentialsSecret:
-    name: order-service-mq-connection
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Vhost
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: vhost
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-vhost
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  name: team-a-order-management-order-service
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
+  vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: v1
 kind: Secret
@@ -225,41 +171,12 @@ metadata:
     uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
 stringData:
   host: team-a-rabbitmq.team-a-infra.svc
-  password: fPjaq9tzVcGLZJA6dBSh2F4RIpu71JUb
+  password: tkyoz3o09tqbmbzhYL05e844G73fh51r
   port: "5672"
-  uri: amqp://order-service-mq:fPjaq9tzVcGLZJA6dBSh2F4RIpu71JUb@team-a-rabbitmq.team-a-infra.svc:5672/team-a-order-management-order-service
+  uri: amqp://order-service-mq:tkyoz3o09tqbmbzhYL05e844G73fh51r@team-a-rabbitmq.team-a-infra.svc:5672/team-a-order-management-order-service-order-service-mq
   username: order-service-mq
-  vhost: team-a-order-management-order-service
+  vhost: team-a-order-management-order-service-order-service-mq
 type: Opaque
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Queue
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: queue-order-processed
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-queue-order-processed
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  durable: true
-  name: order-processed
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
-  vhost: team-a-order-management-order-service
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
@@ -290,13 +207,13 @@ spec:
     namespace: team-a-infra
   routingKey: order.created
   source: orders
-  vhost: team-a-order-management-order-service
+  vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: rabbitmq.com/v1beta1
-kind: Exchange
+kind: Vhost
 metadata:
   annotations:
-    crossplane.io/composition-resource-name: exchange-orders
+    crossplane.io/composition-resource-name: vhost
   labels:
     app.kubernetes.io/component: messaging
     app.kubernetes.io/instance: order-service-mq
@@ -304,7 +221,34 @@ metadata:
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
     idp.rottler.io/team: team-a
-  name: order-service-mq-exchange-orders
+  name: order-service-mq-vhost
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+spec:
+  name: team-a-order-management-order-service-order-service-mq
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: queue-order-created
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-queue-order-created
   namespace: team-a-order-management-order-service
   ownerReferences:
   - apiVersion: idp.rottler.io/v1alpha1
@@ -315,9 +259,65 @@ metadata:
     uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
 spec:
   durable: true
-  name: orders
+  name: order-created
   rabbitmqClusterReference:
     name: team-a-rabbitmq
     namespace: team-a-infra
-  type: topic
-  vhost: team-a-order-management-order-service
+  vhost: team-a-order-management-order-service-order-service-mq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: user
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-user
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+spec:
+  importCredentialsSecret:
+    name: order-service-mq-connection
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: queue-order-processed
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-queue-order-processed
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+spec:
+  durable: true
+  name: order-processed
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+  vhost: team-a-order-management-order-service-order-service-mq

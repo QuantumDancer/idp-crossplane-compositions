@@ -83,16 +83,16 @@ spec:
 
 The composition creates a `Secret` named `<xr-name>-connection` in the XR namespace with the following keys:
 
-| Key        | Example value                                            | Description             |
-| ---------- | -------------------------------------------------------- | ----------------------- |
-| `username` | `order-service-mq`                                       | RabbitMQ username       |
-| `password` | _(generated)_                                            | RabbitMQ password       |
-| `host`     | `team-a-rabbitmq.team-a-infra.svc`                       | Broker service hostname |
-| `port`     | `5672`                                                   | AMQP port               |
-| `vhost`    | `order-service-mq`                                       | Virtual host name       |
-| `uri`      | `amqp://order-service-mq:<pw>@...:5672/order-service-mq` | Full AMQP URI           |
+| Key        | Example value                                                                              | Description             |
+| ---------- | ------------------------------------------------------------------------------------------ | ----------------------- |
+| `username` | `order-service-mq`                                                                         | RabbitMQ username       |
+| `password` | _(generated)_                                                                              | RabbitMQ password       |
+| `host`     | `team-a-rabbitmq.team-a-infra.svc`                                                         | Broker service hostname |
+| `port`     | `5672`                                                                                     | AMQP port               |
+| `vhost`    | `team-a-order-management-order-service-order-service-mq`                                   | Virtual host name (`<namespace>-<xr-name>`) |
+| `uri`      | `amqp://order-service-mq:<pw>@...:5672/team-a-order-management-order-service-order-service-mq` | Full AMQP URI |
 
-The password is generated once on first reconcile and stable thereafter (Crossplane uses observed state after the initial apply). Mount the secret in your deployment:
+The vhost name is `<namespace>-<xr-name>`, which guarantees isolation even when two instances share the same namespace. The password is generated on the first reconcile and stable thereafter — it is read from the observed secret state on subsequent reconciles. Mount the secret in your deployment:
 
 ```yaml
 envFrom:

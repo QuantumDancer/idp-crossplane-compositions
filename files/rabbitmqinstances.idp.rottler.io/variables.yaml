@@ -2,13 +2,19 @@
 {{- $namespace := .observed.composite.resource.metadata.namespace -}}
 {{- $clusterName := .observed.composite.resource.spec.clusterRef.name -}}
 {{- $clusterNamespace := .observed.composite.resource.spec.clusterRef.namespace -}}
-{{- $vhostName := $namespace -}}
+{{- $vhostName := printf "%s-%s" $namespace $xrName -}}
 {{- $secretName := printf "%s-connection" $xrName -}}
 {{- $durability := .observed.composite.resource.spec.durability | default "persistent" -}}
 {{- $durable := eq $durability "persistent" -}}
 {{- $exchanges := .observed.composite.resource.spec.exchanges | default (list) -}}
 {{- $queues := .observed.composite.resource.spec.queues | default (list) -}}
 {{- $password := randAlphaNum 32 -}}
+{{- if .observed.composedResources -}}
+  {{- $observedSecret := index .observed.composedResources "connection-secret" -}}
+  {{- if and $observedSecret $observedSecret.resource.data.password -}}
+    {{- $password = $observedSecret.resource.data.password | b64dec -}}
+  {{- end -}}
+{{- end -}}
 
 {{- $labels := dict
   "app.kubernetes.io/name" "rabbitmq-instance"

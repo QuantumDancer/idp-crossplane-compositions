@@ -30,6 +30,3 @@ spec:
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/variables.yaml" | nindent 10 }}
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/cluster.yaml" | nindent 10 }}
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/status.yaml" | nindent 10 }}
-  - step: automatically-detect-ready-composed-resources
-    functionRef:
-      name: crossplane-contrib-function-auto-ready

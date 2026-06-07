@@ -1,5 +1,10 @@
 ---
 # Patch the XR status from the RabbitmqCluster's observed state.
+#
+# We do not use function-auto-ready here because the RabbitMQ Cluster Operator
+# surfaces readiness via AllReplicasReady rather than the generic Ready condition
+# that function-auto-ready expects. Driving the XR Ready condition manually from
+# AllReplicasReady is the only way kubectl shows READY: True for this resource.
 apiVersion: idp.rottler.io/v1alpha1
 kind: RabbitMQCluster
 status:
@@ -10,5 +15,10 @@ status:
       {{- $ready = true -}}
     {{- end -}}
   {{- end }}
+  conditions:
+    - type: Ready
+      status: "{{ if $ready }}True{{ else }}False{{ end }}"
+      reason: {{ if $ready }}Available{{ else }}Creating{{ end }}
+      lastTransitionTime: "{{ now | date "2006-01-02T15:04:05Z07:00" }}"
   ready: {{ $ready }}
   phase: {{ if $ready }}Running{{ else }}Provisioning{{ end }}

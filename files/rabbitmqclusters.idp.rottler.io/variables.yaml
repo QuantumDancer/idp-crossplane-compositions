@@ -8,6 +8,8 @@
 {{- end -}}
 {{- $storageSizeMap := dict "small" "1Gi" "medium" "10Gi" "large" "20Gi" "x-large" "50Gi" -}}
 {{- $storageSize := index $storageSizeMap (.observed.composite.resource.spec.storageSize | default "small") -}}
+{{- $allowedNamespaces := .observed.composite.resource.spec.allowedNamespaces | default (list) -}}
+{{- $allowedNamespacesValue := join "," $allowedNamespaces -}}
 
 {{- $labels := dict
   "app.kubernetes.io/name" "rabbitmq-cluster"

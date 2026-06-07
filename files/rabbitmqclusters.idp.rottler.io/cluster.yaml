@@ -9,6 +9,9 @@ metadata:
     {{- end }}
   annotations:
     gotemplating.fn.crossplane.io/composition-resource-name: rabbitmq-cluster
+    # Required for RabbitMQInstance topology resources (Vhost, User, Queue, etc.)
+    # to be accepted when they reference this cluster from a different namespace.
+    rabbitmq.com/topology-allowed-namespaces: {{ $allowedNamespacesValue }}
 spec:
   replicas: {{ $replicas }}
   image: rabbitmq:{{ $version }}-management

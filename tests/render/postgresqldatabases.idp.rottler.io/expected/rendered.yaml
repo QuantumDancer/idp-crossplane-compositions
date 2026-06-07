@@ -15,15 +15,15 @@ spec:
       name: my-app-dev-db
 status:
   conditions:
-  - lastTransitionTime: "2026-06-06T21:03:47Z"
+  - lastTransitionTime: "2026-06-07T21:38:09Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-06T21:03:47Z"
+  - lastTransitionTime: "2026-06-07T21:38:09Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-06T21:03:47Z"
+  - lastTransitionTime: "2026-06-07T21:38:09Z"
     message: 'Unready resources: cluster, external-secret'
     reason: Creating
     status: "False"
@@ -35,44 +35,6 @@ status:
   readOnlyEndpoint: null
   ready: false
   readyInstances: 0
----
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: external-secret
-  labels:
-    app.kubernetes.io/component: database
-    app.kubernetes.io/instance: my-app-dev-db
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: postgresql-database
-    crossplane.io/composite: my-app-dev-db
-    idp.rottler.io/environment: homelab
-    idp.rottler.io/team: team-a
-    idp.rottler.io/tier: dev
-  name: my-app-dev-db-external-secret
-  namespace: my-app-dev
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: PostgreSQLDatabase
-    name: my-app-dev-db
-    uid: bffdd0e8-eb4b-5b25-8597-8f47941c5191
-spec:
-  dataFrom:
-  - extract:
-      conversionStrategy: Default
-      decodingStrategy: None
-      key: idp/databases/my-app-dev/my-app-dev-db
-      metadataPolicy: None
-  refreshInterval: 1h0m0s
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: vault-backend
-  target:
-    creationPolicy: Owner
-    name: my-app-dev-db-credentials
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -116,3 +78,41 @@ spec:
       memory: 512Mi
   storage:
     size: 2Gi
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: external-secret
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: my-app-dev-db
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: postgresql-database
+    crossplane.io/composite: my-app-dev-db
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+    idp.rottler.io/tier: dev
+  name: my-app-dev-db-external-secret
+  namespace: my-app-dev
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgreSQLDatabase
+    name: my-app-dev-db
+    uid: bffdd0e8-eb4b-5b25-8597-8f47941c5191
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: idp/databases/my-app-dev/my-app-dev-db
+      metadataPolicy: None
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-app-dev-db-credentials
