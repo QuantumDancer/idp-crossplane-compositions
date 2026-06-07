@@ -2,27 +2,71 @@
 # Regenerates all render golden files. Run this after intentional composition
 # changes, then commit the updated expected/rendered.yaml files.
 #
-# Requires the crossplane CLI at the version pinned in .gitlab-ci.yml
-# (CROSSPLANE_VERSION). A version mismatch will silently produce a golden file
-# that diverges from CI output.
+# Requires the 'crank' binary at $REPO_ROOT/crank, on PATH, or at /tmp/crank.
+# Download the version pinned in .gitlab-ci.yml from:
+#   https://releases.crossplane.io/stable/<VERSION>/bin/darwin_arm64/crank
+#
+# Function gRPC servers are started and stopped automatically via Docker.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Read the pinned version from CI config so there is a single source of truth.
-REQUIRED_VERSION=$(grep 'CROSSPLANE_VERSION:' "$REPO_ROOT/.gitlab-ci.yml" \
-  | awk -F'"' '{print $2}')
-# crossplane version exits 1 when not connected to a cluster; pipefail would
-# abort the script before we can compare versions, so we suppress that exit code.
-ACTUAL_VERSION=$({ crossplane version 2>&1 || true; } | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+# --- Resolve binaries ----------------------------------------------------
+# Two binaries are required locally:
+#   crank              — CLI that drives 'composition render'
+#   crossplane-server  — controller binary providing 'internal render'
+#                        (passed via --crossplane-binary to avoid Docker)
+# Both are available from:
+#   https://releases.crossplane.io/stable/<VERSION>/bin/darwin_arm64/{crank,crossplane}
+REQUIRED_VERSION=$(grep 'CROSSPLANE_VERSION:' "$REPO_ROOT/.gitlab-ci.yml" | awk -F'"' '{print $2}')
 
-if [[ "$ACTUAL_VERSION" != "$REQUIRED_VERSION" ]]; then
-  echo "ERROR: crossplane CLI is ${ACTUAL_VERSION:-not found}, but CI pins ${REQUIRED_VERSION}."
-  echo "       Golden files generated with a different version will diverge from CI."
-  echo "       Install the correct version and retry."
+if [[ -x "$REPO_ROOT/crank" ]]; then
+  CRANK="$REPO_ROOT/crank"
+elif command -v crank &>/dev/null; then
+  CRANK="crank"
+elif [[ -x "/tmp/crank" ]]; then
+  CRANK="/tmp/crank"
+else
+  echo "ERROR: 'crank' not found. Download it from:"
+  echo "  https://releases.crossplane.io/stable/${REQUIRED_VERSION}/bin/darwin_arm64/crank"
   exit 1
 fi
 
+if [[ -x "$REPO_ROOT/crossplane-server" ]]; then
+  CROSSPLANE_SERVER_BIN="$REPO_ROOT/crossplane-server"
+elif [[ -x "/tmp/crossplane-server" ]]; then
+  CROSSPLANE_SERVER_BIN="/tmp/crossplane-server"
+else
+  echo "ERROR: 'crossplane-server' not found. Download it from:"
+  echo "  https://releases.crossplane.io/stable/${REQUIRED_VERSION}/bin/darwin_arm64/crossplane"
+  exit 1
+fi
+
+ACTUAL_VERSION=$("$CRANK" version 2>&1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+if [[ "$ACTUAL_VERSION" != "$REQUIRED_VERSION" ]]; then
+  echo "ERROR: crank is ${ACTUAL_VERSION:-not found}, but CI pins ${REQUIRED_VERSION}."
+  echo "       Golden files generated with a different version will diverge from CI."
+  echo "       Download the correct version and retry."
+  exit 1
+fi
+
+# --- Start function gRPC servers -----------------------------------------
+SAMPLE_FUNCTIONS="$REPO_ROOT/tests/render/postgresqldatabases.idp.rottler.io/functions.yaml"
+FGT_VERSION=$(grep function-go-templating "$SAMPLE_FUNCTIONS" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+FAR_VERSION=$(grep function-auto-ready    "$SAMPLE_FUNCTIONS" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+
+echo "==> Starting function gRPC servers (go-templating ${FGT_VERSION}, auto-ready ${FAR_VERSION})"
+docker rm -f fgt far 2>/dev/null || true
+docker run -d --name fgt -p 9443:9443 \
+  "xpkg.crossplane.io/crossplane-contrib/function-go-templating:${FGT_VERSION}" \
+  --insecure
+docker run -d --name far -p 9444:9444 \
+  "xpkg.crossplane.io/crossplane-contrib/function-auto-ready:${FAR_VERSION}" \
+  --insecure --address :9444
+until nc -z localhost 9443 && nc -z localhost 9444; do sleep 0.3; done
+trap "docker rm -f fgt far >/dev/null" EXIT
+
+# --- Regenerate golden files ---------------------------------------------
 for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
   xrd=$(basename "$xrd_dir")
   echo "==> Updating snapshot for $xrd"
@@ -32,10 +76,11 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
   helm template --show-only "templates/apis/$xrd/composition.yaml" "$REPO_ROOT" \
     > /tmp/composition.yaml
 
-  crossplane render \
+  "$CRANK" composition render \
     "$REPO_ROOT/examples/$xrd/default.yaml" \
     /tmp/composition.yaml \
-    "$xrd_dir/functions.yaml" \
+    "$xrd_dir/functions.ci.yaml" \
+    --crossplane-binary "$CROSSPLANE_SERVER_BIN" \
     > "$xrd_dir/expected/rendered.yaml"
 
   echo "OK: wrote $xrd_dir/expected/rendered.yaml"
