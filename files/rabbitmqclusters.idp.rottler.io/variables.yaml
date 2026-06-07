@@ -11,6 +11,16 @@
 {{- $allowedNamespaces := .observed.composite.resource.spec.allowedNamespaces | default (list) -}}
 {{- $allowedNamespacesValue := join "," $allowedNamespaces -}}
 
+{{- $observedCluster := getComposedResource . "rabbitmq-cluster" -}}
+{{- $clusterReady := false -}}
+{{- if $observedCluster -}}
+  {{- range $observedCluster.status.conditions -}}
+    {{- if and (eq .type "AllReplicasReady") (eq .status "True") -}}
+      {{- $clusterReady = true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
 {{- $labels := dict
   "app.kubernetes.io/name" "rabbitmq-cluster"
   "app.kubernetes.io/instance" $xrName

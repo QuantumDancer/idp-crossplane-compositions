@@ -12,19 +12,18 @@ spec:
       name: team-a-rabbitmq
 status:
   conditions:
-  - lastTransitionTime: "2026-06-07T21:54:45Z"
-    message: 'Unready resources: rabbitmq-cluster'
-    reason: Creating
-    status: "False"
-    type: Ready
-  - lastTransitionTime: "2026-06-07T21:54:45Z"
+  - lastTransitionTime: "2026-06-07T22:10:07Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-07T21:54:45Z"
+  - lastTransitionTime: "2026-06-07T22:10:07Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
+  - lastTransitionTime: "2026-06-07T22:10:07Z"
+    reason: Creating
+    status: "False"
+    type: Ready
   phase: Provisioning
   ready: false
 ---
