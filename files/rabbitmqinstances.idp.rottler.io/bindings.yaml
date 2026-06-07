@@ -17,7 +17,7 @@ spec:
   source: {{ .exchange }}
   destination: {{ .name }}
   destinationType: queue
-  routingKey: {{ .routingKey | default "#" }}
+  routingKey: {{ if .routingKey }}{{ .routingKey }}{{ else }}#{{ end }}
   rabbitmqClusterReference:
     name: {{ $clusterName }}
     namespace: {{ $clusterNamespace }}
