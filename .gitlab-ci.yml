@@ -44,6 +44,11 @@ render-test:
     - |
       curl -sL "https://releases.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crank" \
         -o /usr/local/bin/crossplane && chmod +x /usr/local/bin/crossplane
+    # The controller binary provides the 'internal render' subcommand that crank
+    # calls during composition render. Without it, crank tries to use Docker.
+    - |
+      curl -sL "https://releases.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crossplane" \
+        -o /usr/local/bin/crossplane-server && chmod +x /usr/local/bin/crossplane-server
     # crane extracts OCI image filesystems without a Docker daemon.
     # We use it to pull the function binaries directly from the registry.
     - |

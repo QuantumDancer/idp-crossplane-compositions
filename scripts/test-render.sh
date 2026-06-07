@@ -12,17 +12,16 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAILED=0
 
 # --- Resolve binaries ----------------------------------------------------
-# CI installs the crank CLI as 'crossplane' and the controller binary is not
-# needed (no --crossplane-binary required) because the CI image already has
-# what it needs. Locally we need both:
-#   crank  — the CLI that drives 'composition render'
+# Both binaries are required in all environments:
+#   crank (invoked as 'crossplane' in CI) — the CLI that drives 'composition render'
 #   crossplane-server — the controller binary providing 'internal render',
-#                       passed via --crossplane-binary to avoid Docker
+#                       passed via --crossplane-binary; without it, crank falls
+#                       back to Docker to run that step
 VERSION=$(grep 'CROSSPLANE_VERSION:' "$REPO_ROOT/.gitlab-ci.yml" | awk -F'"' '{print $2}')
 
 if [[ "${CI:-}" == "true" ]]; then
   CRANK="crossplane"
-  CROSSPLANE_SERVER_BIN=""   # not needed in CI
+  CROSSPLANE_SERVER_BIN="/usr/local/bin/crossplane-server"
 else
   # Locate crank
   if [[ -x "$REPO_ROOT/crank" ]]; then
