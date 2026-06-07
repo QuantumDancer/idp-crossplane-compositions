@@ -9,7 +9,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CLUSTER_NAME="idp-test"
+# In CI, append the job ID so concurrent pipelines on the same runner don't
+# clash. CI_JOB_ID is unique across all jobs in a GitLab instance.
+if [[ -n "${CI:-}" ]]; then
+  CLUSTER_NAME="idp-test-${CI_JOB_ID}"
+else
+  CLUSTER_NAME="idp-test"
+fi
 
 cleanup() {
   echo "==> Deleting k3d cluster $CLUSTER_NAME"
