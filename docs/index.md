@@ -6,13 +6,12 @@ Developers create instances of these resources in their application namespaces. 
 
 ## XRD Catalog
 
-| XRD Kind                                                  | Scope     | Purpose                                       | Status      |
-| --------------------------------------------------------- | --------- | --------------------------------------------- | ----------- |
-| [PostgreSQLDatabase](xrds/postgresql-database.md)         | Namespace | CloudNativePG cluster + credential management | Implemented |
-| [ApplicationEnvironment](xrds/application-environment.md) | Cluster   | Namespace + RBAC + ArgoCD Application         | Implemented |
-| RedisCache                                                | Namespace | Redis instance                                | Planned     |
-| MessageQueue                                              | Namespace | RabbitMQ or Kafka topic/queue                 | Planned     |
-| SearchIndex                                               | Namespace | Elasticsearch index                           | Planned     |
+| XRD Kind                                                  | Scope     | Purpose                                       |
+| --------------------------------------------------------- | --------- | --------------------------------------------- |
+| [PostgreSQLDatabase](xrds/postgresql-database.md)         | Namespace | CloudNativePG cluster + credential management |
+| [ApplicationEnvironment](xrds/application-environment.md) | Cluster   | Namespace + RBAC + ArgoCD Application         |
+| [RabbitMQCluster](xrds/rabbitmq-cluster.md)               | Namespace | Dedicated RabbitMQ broker per team            |
+| [RabbitMQInstance](xrds/rabbitmq-instance.md)             | Namespace | Vhost, user, topology + connection secret     |
 
 ## API Conventions
 

@@ -43,10 +43,12 @@ examples/<xrd-name>/     # Sample XR manifests for manual testing
 ### Composition Pattern
 
 Compositions run in **Pipeline mode** with two steps:
+
 1. `crossplane-contrib-function-go-templating` — renders all composed resources from the `files/<xrd-name>/` templates.
 2. `crossplane-contrib-function-auto-ready` — sets `status.ready` based on composed resource health.
 
 The `files/` directory is the working area for composition logic. Each XRD gets its own subdirectory there:
+
 - `variables.yaml` — extracts XR spec fields into Go template variables (sourced first so later files can reference `$team`, `$system`, etc.)
 - One file per composed resource kind (e.g. `namespace.yaml`, `argocd-application.yaml`)
 
@@ -101,6 +103,24 @@ tests/
 4. `files/<plural>.<group>/variables.yaml` — extract spec fields into template vars
 5. `files/<plural>.<group>/<resource>.yaml` — one file per composed resource
 6. `examples/<plural>.<group>/default.yaml` — minimal sample XR
+7. `docs/xrds/<kebab-name>.md` — TechDocs page (see [TechDocs](#techdocs) below)
+8. Add a row to the XRD catalog in `README.md` and `docs/index.md`
+9. Add a nav entry in `mkdocs.yml`
+
+### TechDocs
+
+Tech docs live in `docs/xrds/` and are published via MkDocs (config: `mkdocs.yml`). Every XRD must have a corresponding doc page; keep it in sync whenever the XRD spec changes.
+
+A complete XRD doc page covers:
+
+- One-paragraph summary of what the XRD does and when to use it
+- **What It Creates** — table of every composed resource with name pattern and location
+- **Spec Fields** — table with field name, type, required flag, default, and description (one table per nested object when the spec has depth)
+- **Quick Start** — minimal working YAML example
+- **Status Fields** — table of all `status.*` fields
+- Any XRD-specific sections that matter (HA mode, secret management, relationship to sibling XRDs, etc.)
+
+Follow the style of existing pages (`docs/xrds/postgresql-database.md`) for formatting.
 
 ## XRD API Conventions (from README)
 

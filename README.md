@@ -4,13 +4,14 @@ This repository implements all Crossplane compositions for my IDP reference appl
 
 ## XRD Catalog
 
-| XRD Kind                 | Group            | Purpose                                | Scope     | Status      |
-| ------------------------ | ---------------- | -------------------------------------- | --------- | ----------- |
-| `ApplicationEnvironment` | `idp.rottler.io` | Namespace + RBAC + Argo CD Application | Cluster   | Implemented |
-| `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials    | Namespace | Implemented |
-| `RedisCache`             | `idp.rottler.io` | Redis instance                         | Namespace | Planned     |
-| `MessageQueue`           | `idp.rottler.io` | RabbitMQ or Kafka topic/queue          | Namespace | Planned     |
-| `SearchIndex`            | `idp.rottler.io` | Elasticsearch index                    | Namespace | Planned     |
+| XRD Kind                 | Group            | Purpose                                   | Scope     | Status      |
+| ------------------------ | ---------------- | ----------------------------------------- | --------- | ----------- |
+| `ApplicationEnvironment` | `idp.rottler.io` | Namespace + RBAC + Argo CD Application    | Cluster   | Implemented |
+| `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials       | Namespace | Implemented |
+| `RabbitMQCluster`        | `idp.rottler.io` | Dedicated RabbitMQ broker per team        | Namespace | Implemented |
+| `RabbitMQInstance`       | `idp.rottler.io` | Vhost, user, topology + connection secret | Namespace | Implemented |
+| `RedisCache`             | `idp.rottler.io` | Redis instance                            | Namespace | Planned     |
+| `SearchIndex`            | `idp.rottler.io` | Elasticsearch index                       | Namespace | Planned     |
 
 ## XRD API Conventions
 
