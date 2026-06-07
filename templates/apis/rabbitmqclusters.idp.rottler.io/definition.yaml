@@ -48,6 +48,17 @@ spec:
                   type: string
                   default: "3.13"
                   description: RabbitMQ version to deploy (e.g. "3.13").
+                storageSize:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                    - x-large
+                  default: small
+                  description: |
+                    Persistent volume size for the RabbitMQ data directory.
+                    small: 1Gi, medium: 10Gi, large: 20Gi, x-large: 50Gi.
               required:
                 - team
             status:

@@ -12,6 +12,8 @@ metadata:
 spec:
   replicas: {{ $replicas }}
   image: rabbitmq:{{ $version }}-management
+  persistence:
+    storage: {{ $storageSize }}
   {{- if $ha }}
   # Spread replicas across nodes to survive single-node failures.
   affinity:

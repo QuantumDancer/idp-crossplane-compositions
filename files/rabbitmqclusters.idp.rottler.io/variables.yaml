@@ -6,6 +6,8 @@
 {{- if $ha -}}
   {{- $replicas = 3 -}}
 {{- end -}}
+{{- $storageSizeMap := dict "small" "1Gi" "medium" "10Gi" "large" "20Gi" "x-large" "50Gi" -}}
+{{- $storageSize := index $storageSizeMap (.observed.composite.resource.spec.storageSize | default "small") -}}
 
 {{- $labels := dict
   "app.kubernetes.io/name" "rabbitmq-cluster"

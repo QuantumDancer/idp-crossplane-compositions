@@ -12,15 +12,15 @@ spec:
       name: team-a-rabbitmq
 status:
   conditions:
-  - lastTransitionTime: "2026-06-06T21:03:48Z"
+  - lastTransitionTime: "2026-06-07T21:05:34Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-06T21:03:48Z"
+  - lastTransitionTime: "2026-06-07T21:05:34Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-06T21:03:48Z"
+  - lastTransitionTime: "2026-06-07T21:05:34Z"
     message: 'Unready resources: rabbitmq-cluster'
     reason: Creating
     status: "False"
@@ -51,4 +51,6 @@ metadata:
     uid: 3595a5c9-911d-5e33-996b-2671feae0709
 spec:
   image: rabbitmq:3.13-management
+  persistence:
+    storage: 1Gi
   replicas: 1

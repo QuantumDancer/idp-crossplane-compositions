@@ -17,11 +17,12 @@ The RabbitmqCluster name follows `<team>-rabbitmq`. In HA mode, a `PodDisruption
 
 ## Spec Fields
 
-| Field     | Type    | Required | Default  | Description                                                                                           |
-| --------- | ------- | -------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| `team`    | string  | **Yes**  | —        | Team name. Must match the `idp.rottler.io/team` label.                                                |
-| `ha`      | boolean | No       | `false`  | `false`: 1 replica. `true`: 3 replicas with pod anti-affinity across nodes and quorum queue defaults. |
-| `version` | string  | No       | `"3.13"` | RabbitMQ container image version (e.g. `"3.13"`).                                                     |
+| Field         | Type    | Required | Default   | Description                                                                                           |
+| ------------- | ------- | -------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| `team`        | string  | **Yes**  | —         | Team name. Must match the `idp.rottler.io/team` label.                                                |
+| `ha`          | boolean | No       | `false`   | `false`: 1 replica. `true`: 3 replicas with pod anti-affinity across nodes and quorum queue defaults. |
+| `version`     | string  | No       | `"3.13"`  | RabbitMQ container image version (e.g. `"3.13"`).                                                     |
+| `storageSize` | enum    | No       | `"small"` | Persistent volume size: `small` (1 Gi), `medium` (10 Gi), `large` (20 Gi), `x-large` (50 Gi).       |
 
 ## Quick Start
 
@@ -39,7 +40,7 @@ spec:
   team: team-a
 ```
 
-With HA enabled:
+With HA enabled and production-sized storage:
 
 ```yaml
 apiVersion: idp.rottler.io/v1alpha1
@@ -53,6 +54,7 @@ spec:
   team: team-a
   ha: true
   version: "3.13"
+  storageSize: large
 ```
 
 ## HA Mode

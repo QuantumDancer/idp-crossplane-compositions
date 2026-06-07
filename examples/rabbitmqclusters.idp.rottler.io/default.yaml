@@ -9,3 +9,4 @@ spec:
   team: team-a
   ha: false
   version: "3.13"
+  storageSize: small
