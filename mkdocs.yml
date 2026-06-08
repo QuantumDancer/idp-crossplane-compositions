@@ -4,6 +4,7 @@ nav:
   - XRDs:
       - PostgreSQLDatabase: xrds/postgresql-database.md
       - ApplicationEnvironment: xrds/application-environment.md
+      - TeamInfraEnvironment: xrds/team-infra-environment.md
       - RabbitMQCluster: xrds/rabbitmq-cluster.md
       - RabbitMQInstance: xrds/rabbitmq-instance.md
 plugins:

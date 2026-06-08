@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ printf "%s-infra" $team }}
+  namespace: argocd
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: argocd-application
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $team }}
+
+  source:
+    repoURL: {{ printf "https://gitlab.home.rottlr.de/idp/%s/%s-infra.git" $team $team }}
+    targetRevision: main
+    path: ./
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ printf "%s-infra" $team }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

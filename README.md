@@ -7,6 +7,7 @@ This repository implements all Crossplane compositions for my IDP reference appl
 | XRD Kind                 | Group            | Purpose                                   | Scope     | Status      |
 | ------------------------ | ---------------- | ----------------------------------------- | --------- | ----------- |
 | `ApplicationEnvironment` | `idp.rottler.io` | Namespace + RBAC + Argo CD Application    | Cluster   | Implemented |
+| `TeamInfraEnvironment`   | `idp.rottler.io` | Team infra namespace + ArgoCD Application | Cluster   | Implemented |
 | `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials       | Namespace | Implemented |
 | `RabbitMQCluster`        | `idp.rottler.io` | Dedicated RabbitMQ broker per team        | Namespace | Implemented |
 | `RabbitMQInstance`       | `idp.rottler.io` | Vhost, user, topology + connection secret | Namespace | Implemented |

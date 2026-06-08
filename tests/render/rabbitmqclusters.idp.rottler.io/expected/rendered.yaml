@@ -12,15 +12,15 @@ spec:
       name: team-a-rabbitmq
 status:
   conditions:
-  - lastTransitionTime: "2026-06-07T22:10:07Z"
+  - lastTransitionTime: "2026-06-08T19:01:22Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-07T22:10:07Z"
+  - lastTransitionTime: "2026-06-08T19:01:22Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-07T22:10:07Z"
+  - lastTransitionTime: "2026-06-08T19:01:22Z"
     reason: Creating
     status: "False"
     type: Ready

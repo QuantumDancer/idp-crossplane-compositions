@@ -1,0 +1,55 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: teaminfraenvironments.idp.rottler.io
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: team-infra-environment
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: team-infra-environment
+spec:
+  scope: Cluster
+  group: idp.rottler.io
+  names:
+    kind: TeamInfraEnvironment
+    plural: teaminfraenvironments
+  defaultCompositionRef:
+    name: team-infra-environment
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            TeamInfraEnvironment provisions the shared infra namespace and ArgoCD Application
+            for a team. The infra namespace (e.g. team-a-infra) is where team-scoped shared
+            resources such as RabbitMQCluster live. One instance per team per cluster.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                team:
+                  type: string
+                  description: >
+                    The GitLab group and Backstage Group that owns this infra environment,
+                    e.g. team-a. Drives namespace naming and ArgoCD project assignment.
+                environment:
+                  type: string
+                  description: >
+                    The target environment. Controls which cluster the infra namespace is
+                    provisioned in.
+                  enum:
+                    - homelab
+                    - development
+                    - production
+                  default: homelab
+              required:
+                - team

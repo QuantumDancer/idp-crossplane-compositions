@@ -126,6 +126,6 @@ Follow the style of existing pages (`docs/xrds/postgresql-database.md`) for form
 
 - Prefer enums (t-shirt sizes) over raw values in XR specs.
 - Keep required fields minimal; use sensible defaults for optional fields.
-- `ApplicationEnvironment` is Cluster-scoped (creates the namespace); all other XRDs are Namespaced.
+- `ApplicationEnvironment` and `TeamInfraEnvironment` are Cluster-scoped (they create namespaces); all other XRDs are Namespaced.
 - Every XRD must expose `status.ready` (bool) and `status.phase` (string).
 - All XRDs live under `idp.rottler.io`, starting at `v1alpha1`; prefer backward-compatible (additive) schema changes.

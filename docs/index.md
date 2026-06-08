@@ -10,6 +10,7 @@ Developers create instances of these resources in their application namespaces. 
 | --------------------------------------------------------- | --------- | --------------------------------------------- |
 | [PostgreSQLDatabase](xrds/postgresql-database.md)         | Namespace | CloudNativePG cluster + credential management |
 | [ApplicationEnvironment](xrds/application-environment.md) | Cluster   | Namespace + RBAC + ArgoCD Application         |
+| [TeamInfraEnvironment](xrds/team-infra-environment.md)    | Cluster   | Team infra namespace + ArgoCD Application     |
 | [RabbitMQCluster](xrds/rabbitmq-cluster.md)               | Namespace | Dedicated RabbitMQ broker per team            |
 | [RabbitMQInstance](xrds/rabbitmq-instance.md)             | Namespace | Vhost, user, topology + connection secret     |
 
@@ -23,6 +24,6 @@ All XRDs follow these conventions:
 
 **Standard status contract.** Every XRD exposes `status.ready` (bool) and `status.phase` (string) so Backstage and `kubectl wait` have a uniform readiness signal.
 
-**Namespaced scope for application infrastructure.** All per-component XRDs are namespace-scoped so developers create resources in their own namespace. `ApplicationEnvironment` is the only cluster-scoped exception — it creates the namespace itself.
+**Namespaced scope for application infrastructure.** All per-component XRDs are namespace-scoped so developers create resources in their own namespace. `ApplicationEnvironment` and `TeamInfraEnvironment` are cluster-scoped — they create the namespaces themselves and are managed by the platform team, not developers.
 
 **Stable API group.** All XRDs live under `idp.rottler.io`, starting at `v1alpha1`. Schema changes are additive (new optional fields only). Breaking changes bump the version.

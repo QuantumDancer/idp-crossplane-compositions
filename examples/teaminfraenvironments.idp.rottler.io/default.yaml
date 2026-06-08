@@ -1,0 +1,7 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: TeamInfraEnvironment
+metadata:
+  name: team-a
+spec:
+  team: team-a
+  environment: homelab
