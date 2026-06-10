@@ -15,6 +15,10 @@ spec:
     repoURL: {{ printf "https://gitlab.home.rottlr.de/idp/%s/%s-infra.git" $team $team }}
     targetRevision: main
     path: ./
+    directory:
+      # The repo root also contains the Backstage entity file, which is not a
+      # Kubernetes manifest and must not be applied to the cluster.
+      exclude: catalog-info.yaml
 
   destination:
     server: https://kubernetes.default.svc
