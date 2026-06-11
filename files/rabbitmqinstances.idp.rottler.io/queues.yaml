@@ -15,6 +15,17 @@ spec:
   name: {{ .name }}
   vhost: {{ $vhostName }}
   durable: {{ $durable }}
+  type: {{ .type | default "classic" }}
+  {{- if or .deadLetterQueue .deliveryLimit }}
+  arguments:
+    {{- if .deadLetterQueue }}
+    x-dead-letter-exchange: ""
+    x-dead-letter-routing-key: {{ .deadLetterQueue }}
+    {{- end }}
+    {{- if .deliveryLimit }}
+    x-delivery-limit: {{ .deliveryLimit }}
+    {{- end }}
+  {{- end }}
   rabbitmqClusterReference:
     name: {{ $clusterName }}
     namespace: {{ $clusterNamespace }}

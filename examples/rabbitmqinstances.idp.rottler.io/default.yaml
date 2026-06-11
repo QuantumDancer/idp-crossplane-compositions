@@ -20,3 +20,10 @@ spec:
     - name: order-processed
       exchange: orders
       routingKey: "order.processed"
+    - name: order-retry
+      exchange: orders
+      routingKey: "order.retry"
+      type: quorum
+      deliveryLimit: 3
+      deadLetterQueue: order-retry-dlq
+    - name: order-retry-dlq

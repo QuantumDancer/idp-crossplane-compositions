@@ -45,11 +45,14 @@ For a service `order-service` with one exchange and two queues:
 
 ### `queues[]`
 
-| Field        | Type   | Required | Description                                                                                                      |
-| ------------ | ------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
-| `name`       | string | **Yes**  | Queue name in RabbitMQ.                                                                                          |
-| `exchange`   | string | No       | Exchange to bind this queue to. If omitted, the queue is unbound and receives messages via the default exchange. |
-| `routingKey` | string | No       | Routing key for the binding. Defaults to `#` (matches all) for topic exchanges.                                  |
+| Field             | Type                | Required | Default   | Description                                                                                                      |
+| ----------------- | ------------------- | -------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `name`            | string              | **Yes**  | —         | Queue name in RabbitMQ.                                                                                          |
+| `exchange`        | string              | No       | —         | Exchange to bind this queue to. If omitted, the queue is unbound and receives messages via the default exchange. |
+| `routingKey`      | string              | No       | `#`       | Routing key for the binding. Defaults to `#` (matches all) for topic exchanges.                                  |
+| `type`            | `classic \| quorum` | No       | `classic` | Queue type. See [Queue Types](#queue-types).                                                                     |
+| `deliveryLimit`   | integer             | No       | —         | Max delivery attempts before dead-lettering. Quorum queues only; requires `deadLetterQueue`.                     |
+| `deadLetterQueue` | string              | No       | —         | Name of the dead-letter queue for rejected/expired messages. See [Dead-lettering](#dead-lettering).              |
 
 ## Quick Start
 
@@ -137,6 +140,35 @@ kubectl wait rabbitmqinstance/order-service-mq \
   -n team-a-order-management-order-service \
   --timeout=5m
 ```
+
+## Queue Types
+
+| Type      | Replication | Durability required | Use case                                            |
+| --------- | ----------- | ------------------- | --------------------------------------------------- |
+| `classic` | No          | No                  | Low-stakes, high-throughput, or ephemeral messaging |
+| `quorum`  | Yes (Raft)  | **Yes**             | Production job queues, reliable task delivery       |
+
+Quorum queues survive broker failures by replicating messages across cluster nodes. They require `durability: persistent` — the XRD will render them as `durable: true` regardless, but the instance-wide `durability` field should be `persistent` to avoid inconsistency with exchanges.
+
+## Dead-lettering
+
+When a message exceeds its delivery limit or is rejected without requeue, RabbitMQ forwards it to the dead-letter queue specified in `deadLetterQueue`. The composition routes it via the default exchange (`x-dead-letter-exchange: ""`), so the target queue must exist in the same vhost — declare it as a sibling entry in `spec.queues`.
+
+Example — job queue with a DLQ:
+
+```yaml
+queues:
+  - name: watermark.jobs
+    exchange: watermarking
+    routingKey: "job.submitted"
+    type: quorum
+    deliveryLimit: 3
+    deadLetterQueue: watermark.jobs.dlq
+  - name: watermark.jobs.dlq
+    # unbound — receives dead-lettered messages from watermark.jobs
+```
+
+After `deliveryLimit` failed delivery attempts, the worker's rejected message lands in `watermark.jobs.dlq`, where a separate process (or an operator alert) can inspect and remediate it. The job record in the application database should be marked `failed` at that point.
 
 ## Relationship to RabbitMQCluster
 

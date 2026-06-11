@@ -19,36 +19,19 @@ spec:
       name: team-a-infra
 status:
   conditions:
-  - lastTransitionTime: "2026-06-10T19:08:28Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-10T19:08:28Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-10T19:08:28Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     message: 'Unready resources: argocd-application, argocd-repo-secret, and namespace'
     reason: Creating
     status: "False"
     type: Ready
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: namespace
-  labels:
-    crossplane.io/composite: team-a
-  name: team-a-infra
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: TeamInfraEnvironment
-    name: team-a
-    uid: 10f17d7e-8220-5634-86d9-8e319024c358
-spec: {}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -122,3 +105,20 @@ spec:
       metadata:
         labels:
           argocd.argoproj.io/secret-type: repository
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: namespace
+  labels:
+    crossplane.io/composite: team-a
+  name: team-a-infra
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: TeamInfraEnvironment
+    name: team-a
+    uid: 10f17d7e-8220-5634-86d9-8e319024c358
+spec: {}

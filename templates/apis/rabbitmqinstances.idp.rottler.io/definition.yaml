@@ -92,6 +92,28 @@ spec:
                       routingKey:
                         type: string
                         description: Routing key for the binding. Defaults to "#" (matches all) for topic exchanges.
+                      type:
+                        type: string
+                        enum:
+                          - classic
+                          - quorum
+                        default: classic
+                        description: |
+                          Queue type. classic (default): standard RabbitMQ queue.
+                          quorum: replicated, fault-tolerant queue backed by the Raft consensus
+                          algorithm. Recommended for production workloads. Requires durability: persistent.
+                      deliveryLimit:
+                        type: integer
+                        minimum: 1
+                        description: |
+                          Maximum number of delivery attempts before the message is dead-lettered.
+                          Only valid for quorum queues. Requires deadLetterQueue to be set.
+                      deadLetterQueue:
+                        type: string
+                        description: |
+                          Name of the queue to route rejected or undeliverable messages to.
+                          Routing is via the default exchange (x-dead-letter-exchange: ""),
+                          so the target queue must exist in the same vhost.
                     required:
                       - name
               required:

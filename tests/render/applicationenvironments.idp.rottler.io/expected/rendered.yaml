@@ -19,58 +19,19 @@ spec:
       name: team-a-order-management-order-service
 status:
   conditions:
-  - lastTransitionTime: "2026-06-08T19:01:19Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-08T19:01:19Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-08T19:01:19Z"
+  - lastTransitionTime: "2026-06-11T19:28:37Z"
     message: 'Unready resources: argocd-application, argocd-repo-secret, and namespace'
     reason: Creating
     status: "False"
     type: Ready
----
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: argocd-repo-secret
-  labels:
-    crossplane.io/composite: team-a-order-management-order-service
-  name: repo-team-a-order-management-order-service-deployment
-  namespace: argocd
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: ApplicationEnvironment
-    name: team-a-order-management-order-service
-    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
-spec:
-  dataFrom:
-  - extract:
-      conversionStrategy: Default
-      decodingStrategy: None
-      key: idp/platform/argocd/idp-group-pull-secret
-      metadataPolicy: None
-  refreshInterval: 1h0m0s
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: vault-backend
-  target:
-    template:
-      data:
-        password: '{{ .password }}'
-        project: team-a
-        type: git
-        url: https://gitlab.home.rottlr.de/idp/team-a/order-management-order-service-deployment.git
-        username: '{{ .username }}'
-      metadata:
-        labels:
-          argocd.argoproj.io/secret-type: repository
 ---
 apiVersion: v1
 kind: Namespace
@@ -125,3 +86,42 @@ spec:
     automated:
       prune: true
       selfHeal: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: argocd-repo-secret
+  labels:
+    crossplane.io/composite: team-a-order-management-order-service
+  name: repo-team-a-order-management-order-service-deployment
+  namespace: argocd
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ApplicationEnvironment
+    name: team-a-order-management-order-service
+    uid: 95a0b7e6-9862-50d4-8f64-af2420a8a456
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: idp/platform/argocd/idp-group-pull-secret
+      metadataPolicy: None
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    template:
+      data:
+        password: '{{ .password }}'
+        project: team-a
+        type: git
+        url: https://gitlab.home.rottlr.de/idp/team-a/order-management-order-service-deployment.git
+        username: '{{ .username }}'
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
