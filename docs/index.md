@@ -13,6 +13,8 @@ Developers create instances of these resources in their application namespaces. 
 | [TeamInfraEnvironment](xrds/team-infra-environment.md)    | Cluster   | Team infra namespace + ArgoCD Application     |
 | [RabbitMQCluster](xrds/rabbitmq-cluster.md)               | Namespace | Dedicated RabbitMQ broker per team            |
 | [RabbitMQInstance](xrds/rabbitmq-instance.md)             | Namespace | Vhost, user, topology + connection secret     |
+| [WebService](xrds/web-service.md)                         | Namespace | HTTP workload: Deployment + Service + route   |
+| [Worker](xrds/worker.md)                                  | Namespace | Headless workload; KEDA queue-depth scaling   |
 
 ## API Conventions
 

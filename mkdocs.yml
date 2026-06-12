@@ -7,5 +7,7 @@ nav:
       - TeamInfraEnvironment: xrds/team-infra-environment.md
       - RabbitMQCluster: xrds/rabbitmq-cluster.md
       - RabbitMQInstance: xrds/rabbitmq-instance.md
+      - WebService: xrds/web-service.md
+      - Worker: xrds/worker.md
 plugins:
   - techdocs-core

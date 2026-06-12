@@ -1,0 +1,11 @@
+# Default values for the idp-crossplane-compositions chart.
+#
+# Per-cluster configuration is supplied by the environment overlay
+# (environments/<env>.yaml), layered on top of this file by the GitOps
+# Application (argocd-platform-apps -> crossplane-compositions).
+#
+# baseDomain: the cluster's public base domain. The WebService composition
+#   appends it to `expose.hostname` to build each app's FQDN. Intentionally
+#   left UNSET here so a missing/forgotten environment overlay fails the install
+#   loudly (Helm `required`) instead of silently producing a wrong FQDN.
+#   Set it in environments/<env>.yaml, e.g. `baseDomain: k8s.home.rottlr.de`.

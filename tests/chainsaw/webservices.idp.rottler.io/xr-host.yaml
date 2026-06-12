@@ -1,0 +1,16 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: WebService
+metadata:
+  name: watermarkflow-edge
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/environment: homelab
+spec:
+  image:
+    repository: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-edge
+    tag: "a1b2c3d4"
+  port: 8000
+  compute: small
+  # Escape hatch: a full FQDN used verbatim, with no base domain appended.
+  expose:
+    host: edge.custom.example.com

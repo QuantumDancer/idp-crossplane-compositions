@@ -31,8 +31,8 @@ helm-lint:
     name: alpine/helm:3.20.2
     entrypoint: [""]
   script:
-    - helm lint .
-    - helm template . --debug > /dev/null
+    - helm lint . --values environments/homelab.yaml
+    - helm template . --values environments/homelab.yaml --debug > /dev/null
 
 render-test:
   stage: render

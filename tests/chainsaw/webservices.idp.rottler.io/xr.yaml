@@ -1,0 +1,26 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: WebService
+metadata:
+  name: watermarkflow-backend
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/environment: homelab
+spec:
+  image:
+    repository: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-backend
+    tag: "a1b2c3d4"
+  port: 8000
+  compute: small
+  scaling:
+    min: 1
+    max: 5
+  expose:
+    hostname: watermarkflow
+  env:
+    LOG_LEVEL: info
+  envFrom:
+    - vaultPath: idp/team-a/watermarkflow/backend-config
+      name: config
+  kubernetesAccess:
+    enabled: true
+    preset: view-workloads

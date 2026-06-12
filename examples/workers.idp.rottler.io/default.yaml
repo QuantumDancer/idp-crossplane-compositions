@@ -1,0 +1,28 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: Worker
+metadata:
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/environment: homelab
+spec:
+  image:
+    repository: gitlab.home.rottlr.de:5050/idp/team-a/my-worker
+    tag: "1.0.0"
+  compute: small
+  scaling:
+    min: 0
+    max: 10
+    queue:
+      name: jobs
+      connectionSecretRef: my-worker-rabbitmq
+      messagesPerReplica: 5
+  cache:
+    mountPath: /cache
+    sizeLimit: 2Gi
+  env:
+    LOG_LEVEL: info
+  envFrom:
+    - vaultPath: idp/team-a/my-system/s3-credentials
+      name: s3-credentials

@@ -66,6 +66,29 @@ docker run -d --name far -p 9444:9444 \
 until nc -z localhost 9443 && nc -z localhost 9444; do sleep 0.3; done
 trap "docker rm -f fgt far >/dev/null" EXIT
 
+# --- Normalize render output ---------------------------------------------
+# Must mirror test-render.sh exactly: render embeds a fresh timestamp/UID per run
+# and document ordering can vary, so goldens are written normalized. Otherwise
+# every regeneration churns ephemeral values and re-orders docs, drowning real
+# changes in review noise.
+normalize() {
+  python3 - "$1" <<'EOF'
+import sys, re
+
+with open(sys.argv[1]) as f:
+    content = f.read()
+
+content = re.sub(r'lastTransitionTime: "[^"]*"', 'lastTransitionTime: "TIMESTAMP"', content)
+content = re.sub(r'\buid: [0-9a-f-]{36}\b', 'uid: UID', content)
+content = re.sub(r'^  password: .*$', '  password: PASSWORD', content, flags=re.MULTILINE)
+content = re.sub(r'^  uri: .*$', '  uri: URI', content, flags=re.MULTILINE)
+
+docs = [d.strip() for d in re.split(r'\n---\n|^---\n', content, flags=re.MULTILINE) if d.strip()]
+docs.sort()
+print('\n---\n'.join(docs))
+EOF
+}
+
 # --- Regenerate golden files ---------------------------------------------
 for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
   xrd=$(basename "$xrd_dir")
@@ -74,6 +97,7 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
   mkdir -p "$xrd_dir/expected"
 
   helm template --show-only "templates/apis/$xrd/composition.yaml" "$REPO_ROOT" \
+    --values "$REPO_ROOT/environments/homelab.yaml" \
     > /tmp/composition.yaml
 
   "$CRANK" composition render \
@@ -81,7 +105,9 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
     /tmp/composition.yaml \
     "$xrd_dir/functions.ci.yaml" \
     --crossplane-binary "$CROSSPLANE_SERVER_BIN" \
-    > "$xrd_dir/expected/rendered.yaml"
+    > /tmp/rendered.yaml
+
+  normalize /tmp/rendered.yaml > "$xrd_dir/expected/rendered.yaml"
 
   echo "OK: wrote $xrd_dir/expected/rendered.yaml"
 done

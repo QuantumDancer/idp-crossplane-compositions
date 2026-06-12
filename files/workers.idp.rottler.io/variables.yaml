@@ -1,0 +1,74 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $spec := .observed.composite.resource.spec -}}
+{{- $environment := index .observed.composite.resource.metadata.labels "idp.rottler.io/environment" | default "homelab" -}}
+
+{{- $imageRepo := $spec.image.repository -}}
+{{- $imageTag := $spec.image.tag | default "" -}}
+
+{{- /* Backstage's k8s plugin matches resources by this label; defaults to the
+       XR name, which is the component id for services born from the template. */ -}}
+{{- $backstageComponent := $spec.backstageComponent | default $xrName -}}
+
+{{- /* Image-pull credentials: platform-standard group pull secret in Vault. */ -}}
+{{- $pullVaultPath := "idp/platform/argocd/idp-group-pull-secret" -}}
+{{- $registry := splitList "/" $imageRepo | first -}}
+{{- $imagePullSecretName := printf "%s-image-pull" $xrName -}}
+
+{{- /* Compute tier → resource requests/limits. No CPU limit by design. */ -}}
+{{- $computeTier := $spec.compute -}}
+{{- $cpuRequest := "" -}}
+{{- $memoryRequest := "" -}}
+{{- $memoryLimit := "" -}}
+{{- if eq $computeTier "small" -}}
+  {{- $cpuRequest = "100m" -}}{{- $memoryRequest = "256Mi" -}}{{- $memoryLimit = "512Mi" -}}
+{{- else if eq $computeTier "medium" -}}
+  {{- $cpuRequest = "250m" -}}{{- $memoryRequest = "512Mi" -}}{{- $memoryLimit = "1Gi" -}}
+{{- else if eq $computeTier "large" -}}
+  {{- $cpuRequest = "500m" -}}{{- $memoryRequest = "1Gi" -}}{{- $memoryLimit = "2Gi" -}}
+{{- end -}}
+
+{{- /* Scaling: a queue trigger hands replica control to KEDA between min and max;
+       without one the Deployment runs a fixed `min` replicas (default 1). */ -}}
+{{- $scaling := $spec.scaling | default dict -}}
+{{- /* `default` treats 0 as empty, which would silently break scale-to-zero, so
+       read min explicitly. */ -}}
+{{- $min := 1 -}}
+{{- if hasKey $scaling "min" -}}{{- $min = $scaling.min | int -}}{{- end -}}
+{{- $max := $scaling.max | default 10 | int -}}
+{{- $queue := $scaling.queue | default dict -}}
+{{- $queueEnabled := not (empty $queue) -}}
+{{- $messagesPerReplica := $queue.messagesPerReplica | default 5 | int -}}
+
+{{- /* Optional emptyDir scratch volume. */ -}}
+{{- $cache := $spec.cache | default dict -}}
+{{- $cacheEnabled := not (empty $cache) -}}
+
+{{- $env := $spec.env | default dict -}}
+{{- $envFrom := $spec.envFrom | default list -}}
+
+{{- $metrics := $spec.metrics | default dict -}}
+{{- $metricsEnabled := $metrics.enabled | default true -}}
+{{- $metricsPath := $metrics.path | default "/metrics" -}}
+{{- $metricsPort := $metrics.port | default 9100 | int -}}
+
+{{- $access := $spec.kubernetesAccess | default dict -}}
+{{- $accessEnabled := $access.enabled | default false -}}
+{{- /* enabled + a named SA → run as that platform-owned SA and compose neither
+       a ServiceAccount nor RBAC. enabled alone → composition manages both. */ -}}
+{{- $externalSA := "" -}}
+{{- if and $accessEnabled $access.serviceAccount -}}{{- $externalSA = $access.serviceAccount -}}{{- end -}}
+{{- $saName := $externalSA | default $xrName -}}
+{{- $manageRbac := and $accessEnabled (not $externalSA) -}}
+
+{{- $selectorLabels := dict
+  "app.kubernetes.io/name" $xrName
+  "app.kubernetes.io/instance" $xrName
+-}}
+{{- $labels := merge (dict
+  "app.kubernetes.io/component" "worker"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "backstage.io/kubernetes-id" $backstageComponent
+  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+  "idp.rottler.io/environment" $environment
+) $selectorLabels -}}

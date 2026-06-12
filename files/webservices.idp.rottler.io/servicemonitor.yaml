@@ -1,0 +1,23 @@
+{{- if $metricsEnabled }}
+---
+# Observability at birth: scrape the http port by default.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: servicemonitor
+spec:
+  selector:
+    matchLabels:
+      {{- range $key, $value := $selectorLabels }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  endpoints:
+    - port: http
+      path: {{ $metricsPath }}
+{{- end }}

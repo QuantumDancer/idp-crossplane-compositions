@@ -1,0 +1,48 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: web-service
+spec:
+  steps:
+  - name: apply-xr
+    try:
+    - apply:
+        file: xr.yaml
+    - assert:
+        file: assert/deployment.yaml
+    - assert:
+        file: assert/service.yaml
+    - assert:
+        file: assert/httproute.yaml
+    # Verify the composition pipeline ran without error. We assert Synced=True
+    # rather than Ready=True: ESO/Gateway/Prometheus controllers don't run in
+    # this cluster, so the image-pull Secret never materialises, pods never
+    # start, and the Deployment's Available condition (hence XR Ready) never
+    # flips. Synced isolates "did the pipeline succeed" from "are the composed
+    # resources healthy".
+    - assert:
+        resource:
+          apiVersion: idp.rottler.io/v1alpha1
+          kind: WebService
+          metadata:
+            name: watermarkflow-backend
+          (status.conditions[?type=='Synced'].status | [0]): "True"
+    catch:
+    - describe:
+        apiVersion: idp.rottler.io/v1alpha1
+        kind: WebService
+    - podLogs:
+        namespace: crossplane-system
+        selector: app=crossplane
+  # Covers expose.host: the FQDN escape hatch must be used verbatim, with no
+  # base domain appended. This is the only expose path the render goldens miss.
+  - name: apply-xr-host
+    try:
+    - apply:
+        file: xr-host.yaml
+    - assert:
+        file: assert/httproute-host.yaml
+    catch:
+    - describe:
+        apiVersion: idp.rottler.io/v1alpha1
+        kind: WebService

@@ -1,0 +1,242 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: webservices.idp.rottler.io
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: web-service
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: web-service
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: WebService
+    plural: webservices
+  defaultCompositionRef:
+    name: webservice-deployment
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            WebService runs a long-running HTTP workload: a Deployment plus
+            Service, optional Gateway API HTTPRoute, image-pull credentials,
+            metrics scraping, and curated RBAC. The platform owns everything a
+            developer should not have to think about (Gateway parentRefs, PDBs,
+            securityContext, label wiring).
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: object
+                  description: Container image to run.
+                  properties:
+                    repository:
+                      type: string
+                      description: Image repository (without tag).
+                    tag:
+                      type: string
+                      default: ""
+                      description: Image tag. Written by CI on every push; defaults to the empty string before the first deploy.
+                  required:
+                    - repository
+                backstageComponent:
+                  type: string
+                  description: >-
+                    Value for the backstage.io/kubernetes-id label stamped on every
+                    composed resource so Backstage's Kubernetes plugin can find this
+                    component's workloads. Defaults to the XR name; override only when
+                    the Backstage catalog entity's id differs from it.
+                port:
+                  type: integer
+                  description: Container port. The Service targets it and health-check probes default to it.
+                  minimum: 1
+                  maximum: 65535
+                compute:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  description: |
+                    Compute tier mapped to CPU/memory requests and a memory limit
+                    (no CPU limit — throttling hurts these workloads more than it protects).
+
+                    Homelab:
+                    - small:  100m CPU, 256Mi req / 512Mi limit
+                    - medium: 250m CPU, 512Mi req / 1Gi limit
+                    - large:  500m CPU, 1Gi  req / 2Gi limit
+                scaling:
+                  type: object
+                  description: Replica bounds. min == max (or max omitted) means fixed replicas; min < max enables a CPU-based HPA.
+                  # Reject max < min at admission instead of silently dropping the HPA
+                  # and pinning replicas to min. (max == min is the valid "fixed" case.)
+                  x-kubernetes-validations:
+                    - rule: "!has(self.max) || self.max >= self.min"
+                      message: "scaling.max must be greater than or equal to scaling.min"
+                  properties:
+                    min:
+                      type: integer
+                      default: 1
+                      # Scale-to-zero is a Worker story (queue-driven). A WebService
+                      # answering HTTP must keep at least one replica.
+                      minimum: 1
+                      description: Minimum replicas (fixed replica count when max is omitted or equal).
+                    max:
+                      type: integer
+                      minimum: 1
+                      description: Maximum replicas. When greater than min, an HPA scales on CPU utilization.
+                    targetCPUUtilization:
+                      type: integer
+                      default: 80
+                      minimum: 1
+                      maximum: 100
+                      description: Target average CPU utilization percentage for the HPA.
+                expose:
+                  type: object
+                  description: HTTP exposure. Omit entirely for an internal-only Service (no HTTPRoute).
+                  properties:
+                    hostname:
+                      type: string
+                      description: Short hostname; the composition appends its cluster base domain (e.g. "watermarkflow" → watermarkflow.k8s.home.rottlr.de).
+                    host:
+                      type: string
+                      description: Escape hatch — a full FQDN used verbatim instead of hostname + base domain.
+                  oneOf:
+                    - required: [hostname]
+                    - required: [host]
+                healthChecks:
+                  type: object
+                  description: HTTP probe paths. Defaults encode the golden-path convention; override for non-conforming apps.
+                  properties:
+                    liveness:
+                      type: string
+                      default: /api/v1/health/live
+                      description: HTTP path for the liveness probe (served on the container port).
+                    readiness:
+                      type: string
+                      default: /api/v1/health/ready
+                      description: HTTP path for the readiness probe (served on the container port).
+                    startup:
+                      type: object
+                      description: >
+                        Startup probe guarding slow-booting apps. Until it succeeds,
+                        liveness/readiness are suppressed, so a cold start cannot trip
+                        the restart loop. Defaults give a ~60s budget (period × failures).
+                      properties:
+                        path:
+                          type: string
+                          description: HTTP path for the startup probe. Defaults to the liveness path.
+                        periodSeconds:
+                          type: integer
+                          default: 2
+                          minimum: 1
+                          description: Seconds between startup probe attempts.
+                        failureThreshold:
+                          type: integer
+                          default: 30
+                          minimum: 1
+                          description: Consecutive failures tolerated before the pod is restarted.
+                      default: {}
+                  default: {}
+                env:
+                  type: object
+                  description: Static, non-secret configuration as a key/value map. Rendered as container env vars.
+                  additionalProperties:
+                    type: string
+                envFrom:
+                  type: array
+                  description: Secret-backed configuration. Each item references either an existing in-namespace Secret or a Vault path (the composition creates the ExternalSecret).
+                  items:
+                    type: object
+                    properties:
+                      secretRef:
+                        type: string
+                        description: Name of an existing Secret in the same namespace.
+                      vaultPath:
+                        type: string
+                        description: Vault KV v2 path; the composition creates an ExternalSecret pulling all keys into env vars.
+                      name:
+                        type: string
+                        pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+                        description: >
+                          Stable suffix for the composed Secret/ExternalSecret (named
+                          <workload>-<name>). Required with vaultPath; the developer
+                          owns it so reordering envFrom never re-points env at a
+                          different Secret. Ignored for secretRef.
+                    oneOf:
+                      - required: [secretRef]
+                      - required: [vaultPath, name]
+                metrics:
+                  type: object
+                  description: Prometheus scraping via a composed ServiceMonitor. On by default.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+                      description: Whether to compose a ServiceMonitor.
+                    path:
+                      type: string
+                      default: /metrics
+                      description: HTTP path scraped on the container port.
+                  default: {}
+                kubernetesAccess:
+                  type: object
+                  description: Opt-in ServiceAccount RBAC. Omit for a plain ServiceAccount with its token unmounted.
+                  # serviceAccount only takes effect when enabled; reject the
+                  # misleading combination rather than silently ignoring it.
+                  x-kubernetes-validations:
+                    - rule: "!has(self.serviceAccount) || self.enabled"
+                      message: "kubernetesAccess.serviceAccount requires kubernetesAccess.enabled: true"
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: Whether the workload needs Kubernetes API access. When true the composition grants the curated RBAC preset, unless serviceAccount is set.
+                    preset:
+                      type: string
+                      enum:
+                        - view-workloads
+                      default: view-workloads
+                      description: Curated permission set. view-workloads grants read access to common workload objects.
+                    serviceAccount:
+                      type: string
+                      description: >-
+                        Run the workload as this pre-existing ServiceAccount (in the same
+                        namespace) instead of a composition-managed one. The composition
+                        then creates neither a ServiceAccount nor RBAC — the platform team
+                        owns that SA's permissions, including any cluster-scoped grants.
+                        Requires enabled: true.
+                  default: {}
+              required:
+                - image
+                - port
+                - compute
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: Whether the Deployment is available.
+                phase:
+                  type: string
+                  description: "Current phase: Provisioning | Ready | Degraded | Failed."
+                availableReplicas:
+                  type: integer
+                  description: Number of available pods.
+                url:
+                  type: string
+                  description: External URL when exposed via HTTPRoute.
+              required:
+                - ready

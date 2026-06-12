@@ -87,7 +87,9 @@ echo "==> Creating argocd namespace"
 kubectl create namespace argocd
 
 echo "==> Installing IDP compositions chart"
-helm install idp-compositions "$REPO_ROOT" --wait
+helm install idp-compositions "$REPO_ROOT" \
+  --values "$REPO_ROOT/environments/homelab.yaml" \
+  --wait
 
 echo "==> Waiting for Crossplane Functions to become healthy"
 # Functions are OCI packages — give them time to pull and install
@@ -97,11 +99,17 @@ kubectl wait --for=condition=Healthy function \
   --timeout=300s
 
 echo "==> Waiting for XRDs to be Established"
-# Crossplane must finish reconciling the XRD before XRs can be created.
+# Crossplane must finish reconciling each XRD before XRs can be created.
 # helm --wait does not block on this; the explicit wait is required.
-# Note: "Offered" only applies to XRDs with claim types; this XRD has none.
+# Note: "Offered" only applies to XRDs with claim types; these XRDs have none.
 kubectl wait --for=condition=Established \
   xrd/applicationenvironments.idp.rottler.io \
+  xrd/teaminfraenvironments.idp.rottler.io \
+  xrd/postgresqldatabases.idp.rottler.io \
+  xrd/rabbitmqclusters.idp.rottler.io \
+  xrd/rabbitmqinstances.idp.rottler.io \
+  xrd/webservices.idp.rottler.io \
+  xrd/workers.idp.rottler.io \
   --timeout=60s
 
 echo "==> Running Chainsaw tests"

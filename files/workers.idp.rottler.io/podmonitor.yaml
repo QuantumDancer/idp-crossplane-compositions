@@ -1,0 +1,23 @@
+{{- if $metricsEnabled }}
+---
+# A Worker has no Service, so scrape its pods directly via a PodMonitor.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: podmonitor
+spec:
+  selector:
+    matchLabels:
+      {{- range $key, $value := $selectorLabels }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  podMetricsEndpoints:
+    - port: metrics
+      path: {{ $metricsPath }}
+{{- end }}

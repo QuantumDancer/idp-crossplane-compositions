@@ -1,0 +1,2 @@
+# Production (AWS) cluster configuration.
+baseDomain: prod.idp.rottlr.de

@@ -1,0 +1,93 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: deployment
+spec:
+  {{- /* When an HPA owns the replica count, omit replicas so the two don't fight. */}}
+  {{- if not $hpaEnabled }}
+  replicas: {{ $min }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- range $key, $value := $selectorLabels }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- range $key, $value := $labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        - name: {{ $imagePullSecretName }}
+      serviceAccountName: {{ $saName }}
+      # Platform-enforced security baseline; not developer-tunable.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $xrName }}
+          image: "{{ $imageRepo }}:{{ $imageTag }}"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+              protocol: TCP
+          {{- if $env }}
+          env:
+            {{- range $key, $value := $env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $envFrom }}
+          envFrom:
+            {{- range $i, $item := $envFrom }}
+            {{- if $item.secretRef }}
+            - secretRef:
+                name: {{ $item.secretRef }}
+            {{- else if $item.vaultPath }}
+            - secretRef:
+                name: {{ printf "%s-%s" $xrName $item.name }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- /* Startup probe gates liveness/readiness so a slow boot can't restart-loop. */}}
+          startupProbe:
+            httpGet:
+              path: {{ $startupPath }}
+              port: http
+            periodSeconds: {{ $startupPeriod }}
+            failureThreshold: {{ $startupFailureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ $livenessPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: {{ $readinessPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ $cpuRequest }}
+              memory: {{ $memoryRequest }}
+            limits:
+              memory: {{ $memoryLimit }}

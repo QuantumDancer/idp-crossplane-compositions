@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watermarkflow-worker
+spec:
+  template:
+    spec:
+      serviceAccountName: watermarkflow-worker
+      imagePullSecrets:
+        - name: watermarkflow-worker-image-pull
+      containers:
+        - name: watermarkflow-worker
+          image: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-worker:c9d0e1f2
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 2Gi

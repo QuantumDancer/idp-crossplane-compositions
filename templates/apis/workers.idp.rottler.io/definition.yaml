@@ -1,0 +1,214 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: workers.idp.rottler.io
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: worker
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: worker
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: Worker
+    plural: workers
+  defaultCompositionRef:
+    name: worker-deployment
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            Worker runs a headless, long-running process: a Deployment with no
+            Service, port, or HTTP probes. With a queue trigger it scales on queue
+            depth via KEDA (scale-to-zero by default); without one it runs a fixed
+            replica count. Shares the image/compute/env/envFrom/metrics/
+            kubernetesAccess surface with WebService.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: object
+                  description: Container image to run.
+                  properties:
+                    repository:
+                      type: string
+                      description: Image repository (without tag).
+                    tag:
+                      type: string
+                      default: ""
+                      description: Image tag. Written by CI on every push; defaults to the empty string before the first deploy.
+                  required:
+                    - repository
+                backstageComponent:
+                  type: string
+                  description: >-
+                    Value for the backstage.io/kubernetes-id label stamped on every
+                    composed resource so Backstage's Kubernetes plugin can find this
+                    component's workloads. Defaults to the XR name; override only when
+                    the Backstage catalog entity's id differs from it.
+                compute:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  description: |
+                    Compute tier mapped to CPU/memory requests and a memory limit
+                    (no CPU limit by design).
+
+                    Homelab:
+                    - small:  100m CPU, 256Mi req / 512Mi limit
+                    - medium: 250m CPU, 512Mi req / 1Gi limit
+                    - large:  500m CPU, 1Gi  req / 2Gi limit
+                scaling:
+                  type: object
+                  description: |
+                    Replica behaviour. Omit entirely for a fixed single replica. Set
+                    min without queue for a fixed min replicas. Set queue to let KEDA
+                    own replicas between min and max from queue depth.
+                  properties:
+                    min:
+                      type: integer
+                      default: 1
+                      minimum: 0
+                      description: Minimum replicas. 0 enables scale-to-zero (queue triggers only).
+                    max:
+                      type: integer
+                      minimum: 1
+                      description: Maximum replicas when a queue trigger owns scaling.
+                    queue:
+                      type: object
+                      description: Presence enables KEDA queue-depth scaling (a ScaledObject plus TriggerAuthentication). The only trigger in v1.
+                      properties:
+                        name:
+                          type: string
+                          description: Queue name to watch.
+                        connectionSecretRef:
+                          type: string
+                          description: Name of the RabbitMQ connection Secret (its 'uri' key holds the AMQP URI); same namespace.
+                        messagesPerReplica:
+                          type: integer
+                          default: 5
+                          minimum: 1
+                          description: Target queue length per replica (KEDA queueLength).
+                      required:
+                        - name
+                        - connectionSecretRef
+                cache:
+                  type: object
+                  description: Optional emptyDir scratch volume (node-local, lost on pod restart). Omit for no volume.
+                  properties:
+                    mountPath:
+                      type: string
+                      description: Path the volume is mounted at inside the container.
+                    sizeLimit:
+                      type: string
+                      pattern: '^[0-9]+(Mi|Gi)$'
+                      description: 'emptyDir size limit (e.g. "2Gi"). Supported units: Mi, Gi.'
+                  required:
+                    - mountPath
+                    - sizeLimit
+                env:
+                  type: object
+                  description: Static, non-secret configuration as a key/value map. Rendered as container env vars.
+                  additionalProperties:
+                    type: string
+                envFrom:
+                  type: array
+                  description: Secret-backed configuration. Each item references either an existing in-namespace Secret or a Vault path (the composition creates the ExternalSecret).
+                  items:
+                    type: object
+                    properties:
+                      secretRef:
+                        type: string
+                        description: Name of an existing Secret in the same namespace.
+                      vaultPath:
+                        type: string
+                        description: Vault KV v2 path; the composition creates an ExternalSecret pulling all keys into env vars.
+                      name:
+                        type: string
+                        pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+                        description: >
+                          Stable suffix for the composed Secret/ExternalSecret (named
+                          <workload>-<name>). Required with vaultPath; the developer
+                          owns it so reordering envFrom never re-points env at a
+                          different Secret. Ignored for secretRef.
+                    oneOf:
+                      - required: [secretRef]
+                      - required: [vaultPath, name]
+                metrics:
+                  type: object
+                  description: Prometheus scraping via a composed ServiceMonitor. On by default.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+                      description: Whether to compose a ServiceMonitor.
+                    path:
+                      type: string
+                      default: /metrics
+                      description: HTTP path scraped on the metrics port.
+                    port:
+                      type: integer
+                      default: 9100
+                      minimum: 1
+                      maximum: 65535
+                      description: Container port the worker exposes metrics on.
+                  default: {}
+                kubernetesAccess:
+                  type: object
+                  description: Opt-in ServiceAccount RBAC. Omit for a plain ServiceAccount with its token unmounted.
+                  # serviceAccount only takes effect when enabled; reject the
+                  # misleading combination rather than silently ignoring it.
+                  x-kubernetes-validations:
+                    - rule: "!has(self.serviceAccount) || self.enabled"
+                      message: "kubernetesAccess.serviceAccount requires kubernetesAccess.enabled: true"
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: Whether the workload needs Kubernetes API access. When true the composition grants the curated RBAC preset, unless serviceAccount is set.
+                    preset:
+                      type: string
+                      enum:
+                        - view-workloads
+                      default: view-workloads
+                      description: Curated permission set. view-workloads grants read access to common workload objects.
+                    serviceAccount:
+                      type: string
+                      description: >-
+                        Run the workload as this pre-existing ServiceAccount (in the same
+                        namespace) instead of a composition-managed one. The composition
+                        then creates neither a ServiceAccount nor RBAC — the platform team
+                        owns that SA's permissions, including any cluster-scoped grants.
+                        Requires enabled: true.
+                  default: {}
+              required:
+                - image
+                - compute
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: Whether the Deployment is available.
+                phase:
+                  type: string
+                  description: "Current phase: Provisioning | Ready | Degraded | Failed."
+                availableReplicas:
+                  type: integer
+                  description: Number of available pods (0 is healthy when scaled to zero).
+              required:
+                - ready

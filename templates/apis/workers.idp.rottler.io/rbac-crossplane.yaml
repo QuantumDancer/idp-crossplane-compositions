@@ -1,0 +1,76 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane:custom:worker
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: worker
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: worker
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups:
+  - apps
+  resources:
+  - deployments/status
+  verbs: [get, list, watch]
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  - secrets
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups:
+  - external-secrets.io
+  resources:
+  - externalsecrets
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups:
+  - external-secrets.io
+  resources:
+  - externalsecrets/status
+  verbs: [get, list, watch]
+- apiGroups:
+  - keda.sh
+  resources:
+  - scaledobjects
+  - triggerauthentications
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups:
+  - keda.sh
+  resources:
+  - scaledobjects/status
+  verbs: [get, list, watch]
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - podmonitors
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs: [get, list, watch, create, update, patch, delete]
+# Kubernetes blocks creating a Role with permissions the creator does not already
+# hold (escalation prevention), and a RoleBinding to a role the creator cannot
+# 'bind'. The namespaced kubernetesAccess preset grants pod/deployment read access
+# Crossplane itself lacks, so it needs these verbs — scoped to namespaced roles
+# only. Cluster-scoped access is intentionally unsupported, so no clusterroles
+# bind/escalate (which would let any composition mint cluster-wide permissions).
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  verbs: [bind, escalate]

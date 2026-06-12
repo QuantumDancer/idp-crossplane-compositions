@@ -1,0 +1,27 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: Worker
+metadata:
+  name: watermarkflow-worker
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/environment: homelab
+spec:
+  image:
+    repository: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-worker
+    tag: "c9d0e1f2"
+  compute: small
+  scaling:
+    min: 0
+    max: 10
+    queue:
+      name: watermark.jobs
+      connectionSecretRef: watermarkflow-worker-rabbitmq
+      messagesPerReplica: 5
+  cache:
+    mountPath: /cache
+    sizeLimit: 2Gi
+  env:
+    S3_ENDPOINT: https://s3.garage.k8s.home.rottlr.de
+  envFrom:
+    - vaultPath: idp/team-a/watermarkflow/worker-s3-keys
+      name: s3-keys

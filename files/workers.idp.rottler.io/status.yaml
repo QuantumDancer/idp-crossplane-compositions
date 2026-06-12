@@ -1,0 +1,35 @@
+---
+# Patch the XR status from the Deployment's observed state. A scaled-to-zero
+# worker reports 0 available replicas, Available=True, and is considered Ready.
+apiVersion: idp.rottler.io/v1alpha1
+kind: Worker
+status:
+  {{- $deployment := getComposedResource . "deployment" -}}
+  {{- $available := 0 -}}
+  {{- $ready := false -}}
+  {{- $progressStalled := false -}}
+  {{- if $deployment.status -}}
+    {{- $available = get $deployment.status "availableReplicas" | default 0 -}}
+    {{- range $deployment.status.conditions -}}
+      {{- if and (eq .type "Available") (eq .status "True") -}}
+        {{- $ready = true -}}
+      {{- end -}}
+      {{- /* Progressing=False on a Deployment means ProgressDeadlineExceeded. */ -}}
+      {{- if and (eq .type "Progressing") (eq .status "False") -}}
+        {{- $progressStalled = true -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- /* Phase derivation from observable Deployment state:
+       Available=True             → Ready (includes a healthy scaled-to-zero worker)
+       some pods up, not all      → Degraded (rolling or insufficient capacity)
+       no pods + deadline exceeded → Failed
+       otherwise (initial roll-out) → Provisioning */ -}}
+  {{- $phase := "Provisioning" -}}
+  {{- if $ready -}}{{- $phase = "Ready" -}}
+  {{- else if gt ($available | int) 0 -}}{{- $phase = "Degraded" -}}
+  {{- else if $progressStalled -}}{{- $phase = "Failed" -}}
+  {{- end }}
+  ready: {{ $ready }}
+  phase: {{ $phase }}
+  availableReplicas: {{ $available }}

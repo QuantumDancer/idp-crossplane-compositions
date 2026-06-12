@@ -103,6 +103,7 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*; do
   echo "==> Rendering $xrd"
 
   helm template --show-only "templates/apis/$xrd/composition.yaml" "$REPO_ROOT" \
+    --values "$REPO_ROOT/environments/homelab.yaml" \
     >/tmp/composition.yaml
 
   RENDER_ARGS=(
@@ -113,6 +114,17 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*; do
   [[ -n "${CROSSPLANE_SERVER_BIN:-}" ]] && RENDER_ARGS+=(--crossplane-binary "$CROSSPLANE_SERVER_BIN")
 
   "$CRANK" composition render "${RENDER_ARGS[@]}" >/tmp/actual.yaml
+
+  # Catch Go fmt errors (e.g. %!s(MISSING)) that an over-eager printf can bake into
+  # ESO directives meant to pass through verbatim. They render as valid YAML, so a
+  # stale golden could hide them — fail loudly and independently of the diff.
+  if grep -qF '%!' /tmp/actual.yaml; then
+    echo "FAIL: $xrd render output contains a Go-template formatting error (e.g. %!s(MISSING))"
+    grep -nF '%!' /tmp/actual.yaml
+    cp /tmp/actual.yaml "$xrd_dir/actual.yaml"
+    FAILED=1
+    continue
+  fi
 
   if ! diff -u <(normalize "$xrd_dir/expected/rendered.yaml") <(normalize /tmp/actual.yaml); then
     echo "FAIL: $xrd render output differs from golden file"

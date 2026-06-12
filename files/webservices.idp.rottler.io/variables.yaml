@@ -1,0 +1,94 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $spec := .observed.composite.resource.spec -}}
+{{- $environment := index .observed.composite.resource.metadata.labels "idp.rottler.io/environment" | default "homelab" -}}
+
+{{- $port := $spec.port | int -}}
+{{- $imageRepo := $spec.image.repository -}}
+{{- $imageTag := $spec.image.tag | default "" -}}
+
+{{- /* Backstage's k8s plugin matches resources by this label; defaults to the
+       XR name, which is the component id for services born from the template. */ -}}
+{{- $backstageComponent := $spec.backstageComponent | default $xrName -}}
+
+{{- /* Image-pull credentials: platform-standard group pull secret in Vault.
+       The registry to authenticate against is the host portion of the repository. */ -}}
+{{- $pullVaultPath := "idp/platform/argocd/idp-group-pull-secret" -}}
+{{- $registry := splitList "/" $imageRepo | first -}}
+{{- $imagePullSecretName := printf "%s-image-pull" $xrName -}}
+
+{{- /* Compute tier → resource requests/limits. No CPU limit by design.
+       Numbers are homelab values; AWS tiers can branch here later (additive). */ -}}
+{{- $computeTier := $spec.compute -}}
+{{- $cpuRequest := "" -}}
+{{- $memoryRequest := "" -}}
+{{- $memoryLimit := "" -}}
+{{- if eq $computeTier "small" -}}
+  {{- $cpuRequest = "100m" -}}{{- $memoryRequest = "256Mi" -}}{{- $memoryLimit = "512Mi" -}}
+{{- else if eq $computeTier "medium" -}}
+  {{- $cpuRequest = "250m" -}}{{- $memoryRequest = "512Mi" -}}{{- $memoryLimit = "1Gi" -}}
+{{- else if eq $computeTier "large" -}}
+  {{- $cpuRequest = "500m" -}}{{- $memoryRequest = "1Gi" -}}{{- $memoryLimit = "2Gi" -}}
+{{- end -}}
+
+{{- /* $baseDomain is injected by composition.yaml from the chart's per-cluster
+       environment values (environments/<env>.yaml), not derived from any XR field. */ -}}
+
+{{- /* Scaling: min == max (or max unset) → fixed replicas; min < max → CPU HPA. */ -}}
+{{- $scaling := $spec.scaling | default dict -}}
+{{- /* `default` treats 0 as empty, so read min explicitly to preserve min: 0. */ -}}
+{{- $min := 1 -}}
+{{- if hasKey $scaling "min" -}}{{- $min = $scaling.min | int -}}{{- end -}}
+{{- $max := $scaling.max -}}
+{{- $hpaEnabled := and (not (kindIs "invalid" $max)) (gt ($max | default 0 | int) $min) -}}
+{{- $targetCPU := $scaling.targetCPUUtilization | default 80 | int -}}
+{{- $pdbEnabled := gt $min 1 -}}
+
+{{- /* Health checks default to the golden-path paths (encoded in the XRD too). */ -}}
+{{- $health := $spec.healthChecks | default dict -}}
+{{- $livenessPath := $health.liveness | default "/api/v1/health/live" -}}
+{{- $readinessPath := $health.readiness | default "/api/v1/health/ready" -}}
+
+{{- /* Startup probe shields slow cold starts: liveness/readiness stay suppressed
+       until it passes. Path defaults to the liveness path; ~60s budget by default. */ -}}
+{{- $startup := $health.startup | default dict -}}
+{{- $startupPath := $startup.path | default $livenessPath -}}
+{{- $startupPeriod := $startup.periodSeconds | default 2 | int -}}
+{{- $startupFailureThreshold := $startup.failureThreshold | default 30 | int -}}
+
+{{- /* HTTP exposure. host wins over hostname; hostname gets the base domain appended. */ -}}
+{{- $expose := $spec.expose | default dict -}}
+{{- $exposed := or $expose.hostname $expose.host -}}
+{{- $fqdn := "" -}}
+{{- if $expose.host -}}{{- $fqdn = $expose.host -}}
+{{- else if $expose.hostname -}}{{- $fqdn = printf "%s.%s" $expose.hostname $baseDomain -}}{{- end -}}
+
+{{- $env := $spec.env | default dict -}}
+{{- $envFrom := $spec.envFrom | default list -}}
+
+{{- $metrics := $spec.metrics | default dict -}}
+{{- $metricsEnabled := $metrics.enabled | default true -}}
+{{- $metricsPath := $metrics.path | default "/metrics" -}}
+
+{{- $access := $spec.kubernetesAccess | default dict -}}
+{{- $accessEnabled := $access.enabled | default false -}}
+{{- /* enabled + a named SA → run as that platform-owned SA and compose neither
+       a ServiceAccount nor RBAC. enabled alone → composition manages both. */ -}}
+{{- $externalSA := "" -}}
+{{- if and $accessEnabled $access.serviceAccount -}}{{- $externalSA = $access.serviceAccount -}}{{- end -}}
+{{- $saName := $externalSA | default $xrName -}}
+{{- $manageRbac := and $accessEnabled (not $externalSA) -}}
+
+{{- /* Selector labels are the immutable identity shared by Deployment, Service,
+       HTTPRoute backend, PDB and ServiceMonitor. Keep them minimal and stable. */ -}}
+{{- $selectorLabels := dict
+  "app.kubernetes.io/name" $xrName
+  "app.kubernetes.io/instance" $xrName
+-}}
+{{- $labels := merge (dict
+  "app.kubernetes.io/component" "web-service"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "backstage.io/kubernetes-id" $backstageComponent
+  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+  "idp.rottler.io/environment" $environment
+) $selectorLabels -}}

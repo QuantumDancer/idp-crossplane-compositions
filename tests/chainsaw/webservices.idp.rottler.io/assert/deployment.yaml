@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watermarkflow-backend
+spec:
+  template:
+    spec:
+      serviceAccountName: watermarkflow-backend
+      imagePullSecrets:
+        - name: watermarkflow-backend-image-pull
+      containers:
+        - name: watermarkflow-backend
+          image: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-backend:a1b2c3d4
+          ports:
+            - name: http
+              containerPort: 8000

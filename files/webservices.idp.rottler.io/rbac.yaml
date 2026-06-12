@@ -1,0 +1,51 @@
+{{- if $manageRbac }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $xrName }}-view-workloads
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: role
+# Curated "view-workloads" preset — read access to common workload objects.
+rules:
+- apiGroups: [""]
+  resources: [pods, pods/log, configmaps, services, limitranges, resourcequotas]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [deployments, replicasets, statefulsets, daemonsets]
+  verbs: [get, list, watch]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [get, list, watch]
+- apiGroups: [batch]
+  resources: [jobs, cronjobs]
+  verbs: [get, list, watch]
+- apiGroups: [metrics.k8s.io]
+  resources: [pods]
+  verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $xrName }}-view-workloads
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $xrName }}-view-workloads
+subjects:
+  - kind: ServiceAccount
+    name: {{ $xrName }}
+    namespace: {{ $namespace }}
+{{- end }}

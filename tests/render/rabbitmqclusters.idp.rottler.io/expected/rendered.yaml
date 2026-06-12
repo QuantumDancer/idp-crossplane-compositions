@@ -1,4 +1,3 @@
----
 apiVersion: idp.rottler.io/v1alpha1
 kind: RabbitMQCluster
 metadata:
@@ -12,15 +11,15 @@ spec:
       name: team-a-rabbitmq
 status:
   conditions:
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     reason: Creating
     status: "False"
     type: Ready
@@ -48,7 +47,7 @@ metadata:
     controller: true
     kind: RabbitMQCluster
     name: team-a-rabbitmq
-    uid: 3595a5c9-911d-5e33-996b-2671feae0709
+    uid: UID
 spec:
   image: rabbitmq:3.13-management
   persistence:

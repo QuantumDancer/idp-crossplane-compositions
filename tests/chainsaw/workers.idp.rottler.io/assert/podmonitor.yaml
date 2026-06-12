@@ -1,0 +1,8 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: watermarkflow-worker
+spec:
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics

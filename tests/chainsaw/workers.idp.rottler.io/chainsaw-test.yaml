@@ -1,0 +1,34 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: worker
+spec:
+  steps:
+  - name: apply-xr
+    try:
+    - apply:
+        file: xr.yaml
+    - assert:
+        file: assert/deployment.yaml
+    - assert:
+        file: assert/scaledobject.yaml
+    - assert:
+        file: assert/podmonitor.yaml
+    # Assert Synced=True (pipeline ran without error) rather than Ready=True:
+    # KEDA/ESO/Prometheus controllers don't run here, so the Deployment never
+    # becomes Available and the XR never reaches Ready. See the WebService test
+    # for the full rationale.
+    - assert:
+        resource:
+          apiVersion: idp.rottler.io/v1alpha1
+          kind: Worker
+          metadata:
+            name: watermarkflow-worker
+          (status.conditions[?type=='Synced'].status | [0]): "True"
+    catch:
+    - describe:
+        apiVersion: idp.rottler.io/v1alpha1
+        kind: Worker
+    - podLogs:
+        namespace: crossplane-system
+        selector: app=crossplane

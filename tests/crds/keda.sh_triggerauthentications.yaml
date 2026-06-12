@@ -1,0 +1,23 @@
+# Minimal CRD stub for KEDA TriggerAuthentication (v1alpha1). No KEDA controller
+# required — this only registers the type so Crossplane can create
+# TriggerAuthentication objects composed by Worker.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: triggerauthentications.keda.sh
+spec:
+  group: keda.sh
+  scope: Namespaced
+  names:
+    kind: TriggerAuthentication
+    listKind: TriggerAuthenticationList
+    plural: triggerauthentications
+    singular: triggerauthentication
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true

@@ -11,6 +11,8 @@ This repository implements all Crossplane compositions for my IDP reference appl
 | `PostgreSQLDatabase`     | `idp.rottler.io` | CloudNativePG cluster + credentials       | Namespace | Implemented |
 | `RabbitMQCluster`        | `idp.rottler.io` | Dedicated RabbitMQ broker per team        | Namespace | Implemented |
 | `RabbitMQInstance`       | `idp.rottler.io` | Vhost, user, topology + connection secret | Namespace | Implemented |
+| `WebService`             | `idp.rottler.io` | HTTP workload: Deployment + Service + route | Namespace | Implemented |
+| `Worker`                 | `idp.rottler.io` | Headless workload; KEDA queue scaling     | Namespace | Implemented |
 | `RedisCache`             | `idp.rottler.io` | Redis instance                            | Namespace | Planned     |
 | `SearchIndex`            | `idp.rottler.io` | Elasticsearch index                       | Namespace | Planned     |
 

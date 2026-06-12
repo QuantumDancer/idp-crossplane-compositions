@@ -1,0 +1,44 @@
+{{- if $queueEnabled }}
+---
+# KEDA reads the AMQP URI from the RabbitMQ connection secret's 'uri' key.
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ $xrName }}-trigger-auth
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: trigger-authentication
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: {{ $queue.connectionSecretRef }}
+      key: uri
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: scaledobject
+spec:
+  scaleTargetRef:
+    name: {{ $xrName }}
+  minReplicaCount: {{ $min }}
+  maxReplicaCount: {{ $max }}
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: {{ $queue.name }}
+        mode: QueueLength
+        value: {{ $messagesPerReplica | quote }}
+      authenticationRef:
+        name: {{ $xrName }}-trigger-auth
+{{- end }}

@@ -1,0 +1,44 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: worker-deployment
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: worker
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: worker
+    # Crossplane integration
+    crossplane.io/xrd: workers.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: Worker
+  mode: Pipeline
+  pipeline:
+  - step: create-worker-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- .Files.Get "files/workers.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/deployment.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/image-pull-secret.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/external-secrets.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/scaledobject.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/podmonitor.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/serviceaccount.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/rbac.yaml" | nindent 10 }}
+          {{- .Files.Get "files/workers.idp.rottler.io/status.yaml" | nindent 10 }}
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready

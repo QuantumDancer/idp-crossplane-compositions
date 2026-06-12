@@ -1,4 +1,3 @@
----
 apiVersion: idp.rottler.io/v1alpha1
 kind: RabbitMQInstance
 metadata:
@@ -45,15 +44,15 @@ spec:
       name: order-service-mq-connection
 status:
   conditions:
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     reason: WatchCircuitClosed
     status: "True"
     type: Responsive
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     reason: ReconcileSuccess
     status: "True"
     type: Synced
-  - lastTransitionTime: "2026-06-11T19:28:37Z"
+  - lastTransitionTime: "TIMESTAMP"
     message: 'Unready resources: binding-order-created, binding-order-processed, binding-order-retry,
       and 9 more'
     reason: Creating
@@ -64,10 +63,10 @@ status:
   ready: false
 ---
 apiVersion: rabbitmq.com/v1beta1
-kind: Exchange
+kind: Binding
 metadata:
   annotations:
-    crossplane.io/composition-resource-name: exchange-orders
+    crossplane.io/composition-resource-name: binding-order-created
   labels:
     app.kubernetes.io/component: messaging
     app.kubernetes.io/instance: order-service-mq
@@ -75,7 +74,7 @@ metadata:
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
     idp.rottler.io/team: team-a
-  name: order-service-mq-exchange-orders
+  name: order-service-mq-binding-order-created
   namespace: team-a-order-management-order-service
   ownerReferences:
   - apiVersion: idp.rottler.io/v1alpha1
@@ -83,48 +82,15 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
-  durable: true
-  name: orders
+  destination: order-created
+  destinationType: queue
   rabbitmqClusterReference:
     name: team-a-rabbitmq
     namespace: team-a-infra
-  type: topic
-  vhost: team-a-order-management-order-service-order-service-mq
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Queue
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: queue-order-retry
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-queue-order-retry
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  arguments:
-    x-dead-letter-exchange: ""
-    x-dead-letter-routing-key: order-retry-dlq
-    x-delivery-limit: 3
-  durable: true
-  name: order-retry
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
-  type: quorum
+  routingKey: order.created
+  source: orders
   vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: rabbitmq.com/v1beta1
@@ -147,7 +113,7 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   destination: order-processed
   destinationType: queue
@@ -162,7 +128,7 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
   annotations:
-    crossplane.io/composition-resource-name: binding-order-created
+    crossplane.io/composition-resource-name: binding-order-retry
   labels:
     app.kubernetes.io/component: messaging
     app.kubernetes.io/instance: order-service-mq
@@ -170,7 +136,7 @@ metadata:
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
     idp.rottler.io/team: team-a
-  name: order-service-mq-binding-order-created
+  name: order-service-mq-binding-order-retry
   namespace: team-a-order-management-order-service
   ownerReferences:
   - apiVersion: idp.rottler.io/v1alpha1
@@ -178,15 +144,45 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
-  destination: order-created
+  destination: order-retry
   destinationType: queue
   rabbitmqClusterReference:
     name: team-a-rabbitmq
     namespace: team-a-infra
-  routingKey: order.created
+  routingKey: order.retry
   source: orders
+  vhost: team-a-order-management-order-service-order-service-mq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: exchange-orders
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-exchange-orders
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: UID
+spec:
+  durable: true
+  name: orders
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+  type: topic
   vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: rabbitmq.com/v1beta1
@@ -209,7 +205,7 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   permissions:
     configure: .*
@@ -241,7 +237,7 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   durable: true
   name: order-created
@@ -271,7 +267,7 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   durable: true
   name: order-processed
@@ -279,6 +275,40 @@ spec:
     name: team-a-rabbitmq
     namespace: team-a-infra
   type: classic
+  vhost: team-a-order-management-order-service-order-service-mq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: queue-order-retry
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-queue-order-retry
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: UID
+spec:
+  arguments:
+    x-dead-letter-exchange: ""
+    x-dead-letter-routing-key: order-retry-dlq
+    x-delivery-limit: 3
+  durable: true
+  name: order-retry
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+  type: quorum
   vhost: team-a-order-management-order-service-order-service-mq
 ---
 apiVersion: rabbitmq.com/v1beta1
@@ -301,7 +331,7 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   durable: true
   name: order-retry-dlq
@@ -310,94 +340,6 @@ spec:
     namespace: team-a-infra
   type: classic
   vhost: team-a-order-management-order-service-order-service-mq
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Vhost
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: vhost
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-vhost
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  name: team-a-order-management-order-service-order-service-mq
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
----
-apiVersion: rabbitmq.com/v1beta1
-kind: Binding
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: binding-order-retry
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-binding-order-retry
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-spec:
-  destination: order-retry
-  destinationType: queue
-  rabbitmqClusterReference:
-    name: team-a-rabbitmq
-    namespace: team-a-infra
-  routingKey: order.retry
-  source: orders
-  vhost: team-a-order-management-order-service-order-service-mq
----
-apiVersion: v1
-kind: Secret
-metadata:
-  annotations:
-    crossplane.io/composition-resource-name: connection-secret
-  labels:
-    app.kubernetes.io/component: messaging
-    app.kubernetes.io/instance: order-service-mq
-    app.kubernetes.io/managed-by: crossplane
-    app.kubernetes.io/name: rabbitmq-instance
-    crossplane.io/composite: order-service-mq
-    idp.rottler.io/team: team-a
-  name: order-service-mq-connection
-  namespace: team-a-order-management-order-service
-  ownerReferences:
-  - apiVersion: idp.rottler.io/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: RabbitMQInstance
-    name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
-stringData:
-  host: team-a-rabbitmq.team-a-infra.svc
-  password: gMvfq8QAvtETmO4lVdstWAh7kKRXiNu9
-  port: "5672"
-  uri: amqp://order-service-mq:gMvfq8QAvtETmO4lVdstWAh7kKRXiNu9@team-a-rabbitmq.team-a-infra.svc:5672/team-a-order-management-order-service-order-service-mq
-  username: order-service-mq
-  vhost: team-a-order-management-order-service-order-service-mq
-type: Opaque
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: User
@@ -419,10 +361,67 @@ metadata:
     controller: true
     kind: RabbitMQInstance
     name: order-service-mq
-    uid: 0441f11a-c790-5812-b29f-ccf14d511fe5
+    uid: UID
 spec:
   importCredentialsSecret:
     name: order-service-mq-connection
   rabbitmqClusterReference:
     name: team-a-rabbitmq
     namespace: team-a-infra
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: vhost
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-vhost
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: UID
+spec:
+  name: team-a-order-management-order-service-order-service-mq
+  rabbitmqClusterReference:
+    name: team-a-rabbitmq
+    namespace: team-a-infra
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: connection-secret
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: order-service-mq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-instance
+    crossplane.io/composite: order-service-mq
+    idp.rottler.io/team: team-a
+  name: order-service-mq-connection
+  namespace: team-a-order-management-order-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQInstance
+    name: order-service-mq
+    uid: UID
+stringData:
+  host: team-a-rabbitmq.team-a-infra.svc
+  password: PASSWORD
+  port: "5672"
+  uri: URI
+  username: order-service-mq
+  vhost: team-a-order-management-order-service-order-service-mq
+type: Opaque

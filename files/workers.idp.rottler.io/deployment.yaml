@@ -1,0 +1,87 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: deployment
+spec:
+  {{- /* KEDA owns the replica count when a queue trigger is set; otherwise fixed. */}}
+  {{- if not $queueEnabled }}
+  replicas: {{ $min }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- range $key, $value := $selectorLabels }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- range $key, $value := $labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        - name: {{ $imagePullSecretName }}
+      serviceAccountName: {{ $saName }}
+      # Platform-enforced security baseline; not developer-tunable.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $xrName }}
+          image: "{{ $imageRepo }}:{{ $imageTag }}"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          {{- if $metricsEnabled }}
+          ports:
+            - name: metrics
+              containerPort: {{ $metricsPort }}
+              protocol: TCP
+          {{- end }}
+          {{- if $env }}
+          env:
+            {{- range $key, $value := $env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $envFrom }}
+          envFrom:
+            {{- range $i, $item := $envFrom }}
+            {{- if $item.secretRef }}
+            - secretRef:
+                name: {{ $item.secretRef }}
+            {{- else if $item.vaultPath }}
+            - secretRef:
+                name: {{ printf "%s-%s" $xrName $item.name }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          resources:
+            requests:
+              cpu: {{ $cpuRequest }}
+              memory: {{ $memoryRequest }}
+            limits:
+              memory: {{ $memoryLimit }}
+          {{- if $cacheEnabled }}
+          volumeMounts:
+            - name: cache
+              mountPath: {{ $cache.mountPath }}
+          {{- end }}
+      {{- if $cacheEnabled }}
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: {{ $cache.sizeLimit }}
+      {{- end }}

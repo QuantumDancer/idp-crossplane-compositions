@@ -1,0 +1,336 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: deployment
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-worker
+      app.kubernetes.io/name: my-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: worker
+        app.kubernetes.io/instance: my-worker
+        app.kubernetes.io/managed-by: crossplane
+        app.kubernetes.io/name: my-worker
+        backstage.io/kubernetes-id: my-worker
+        idp.rottler.io/environment: homelab
+        idp.rottler.io/team: team-a
+    spec:
+      containers:
+      - env:
+        - name: LOG_LEVEL
+          value: info
+        envFrom:
+        - secretRef:
+            name: my-worker-s3-credentials
+        image: gitlab.home.rottlr.de:5050/idp/team-a/my-worker:1.0.0
+        imagePullPolicy: IfNotPresent
+        name: my-worker
+        ports:
+        - containerPort: 9100
+          name: metrics
+          protocol: TCP
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+      imagePullSecrets:
+      - name: my-worker-image-pull
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: my-worker
+      volumes:
+      - emptyDir:
+          sizeLimit: 2Gi
+        name: cache
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: env-secret-s3-credentials
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker-s3-credentials
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: idp/team-a/my-system/s3-credentials
+      metadataPolicy: None
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-worker-s3-credentials
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: image-pull-secret
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker-image-pull
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  data:
+  - remoteRef:
+      key: idp/platform/argocd/idp-group-pull-secret
+      property: username
+    secretKey: username
+  - remoteRef:
+      key: idp/platform/argocd/idp-group-pull-secret
+      property: password
+    secretKey: password
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-worker-image-pull
+    template:
+      data:
+        .dockerconfigjson: '{"auths":{"gitlab.home.rottlr.de:5050":{"username":"{{
+          .username }}","password":"{{ .password }}","auth":"{{ printf "%s:%s" .username
+          .password | b64enc }}"}}}'
+      type: kubernetes.io/dockerconfigjson
+---
+apiVersion: idp.rottler.io/v1alpha1
+kind: Worker
+metadata:
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: my-worker
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: my-worker-image-pull
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: my-worker-s3-credentials
+    - apiVersion: keda.sh/v1alpha1
+      kind: ScaledObject
+      name: my-worker
+    - apiVersion: keda.sh/v1alpha1
+      kind: TriggerAuthentication
+      name: my-worker-trigger-auth
+    - apiVersion: monitoring.coreos.com/v1
+      kind: PodMonitor
+      name: my-worker
+    - apiVersion: v1
+      kind: ServiceAccount
+      name: my-worker
+status:
+  availableReplicas: 0
+  conditions:
+  - lastTransitionTime: "TIMESTAMP"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "TIMESTAMP"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "TIMESTAMP"
+    message: 'Unready resources: deployment, env-secret-s3-credentials, image-pull-secret,
+      and 4 more'
+    reason: Creating
+    status: "False"
+    type: Ready
+  phase: Provisioning
+  ready: false
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: scaledobject
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  maxReplicaCount: 10
+  minReplicaCount: 0
+  scaleTargetRef:
+    name: my-worker
+  triggers:
+  - authenticationRef:
+      name: my-worker-trigger-auth
+    metadata:
+      mode: QueueLength
+      protocol: amqp
+      queueName: jobs
+      value: "5"
+    type: rabbitmq
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: trigger-authentication
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker-trigger-auth
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  secretTargetRef:
+  - key: uri
+    name: my-worker-rabbitmq
+    parameter: host
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: podmonitor
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID
+spec:
+  podMetricsEndpoints:
+  - path: /metrics
+    port: metrics
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-worker
+      app.kubernetes.io/name: my-worker
+---
+apiVersion: v1
+automountServiceAccountToken: false
+kind: ServiceAccount
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: serviceaccount
+  labels:
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/instance: my-worker
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-worker
+    backstage.io/kubernetes-id: my-worker
+    crossplane.io/composite: my-worker
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-worker
+  namespace: team-a-my-system-my-worker
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Worker
+    name: my-worker
+    uid: UID

@@ -1,0 +1,2 @@
+# Homelab cluster configuration.
+baseDomain: k8s.home.rottlr.de

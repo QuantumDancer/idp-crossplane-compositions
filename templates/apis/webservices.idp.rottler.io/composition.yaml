@@ -1,0 +1,52 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: webservice-deployment
+  labels:
+    # Kubernetes standard labels
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: web-service
+    # IDP labels
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: web-service
+    # Crossplane integration
+    crossplane.io/xrd: webservices.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: WebService
+  mode: Pipeline
+  pipeline:
+  - step: create-webservice-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- /* Base domain is platform-owned per cluster: injected at Helm-install
+                 time from environments/<env>.yaml, so the same XR yields the right
+                 FQDN on every cluster with no developer-facing environment label.
+                 required() fails the install loudly if an overlay forgets to set it. */ -}}
+          {{- printf "{{- $baseDomain := %q -}}" (required "environments/<env>.yaml must set 'baseDomain' for the WebService composition" .Values.baseDomain) | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/deployment.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/service.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/httproute.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/hpa.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/poddisruptionbudget.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/image-pull-secret.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/external-secrets.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/servicemonitor.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/serviceaccount.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/rbac.yaml" | nindent 10 }}
+          {{- .Files.Get "files/webservices.idp.rottler.io/status.yaml" | nindent 10 }}
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready
