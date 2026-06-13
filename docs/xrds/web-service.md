@@ -59,6 +59,7 @@ No HPA and no PodDisruptionBudget are created for a single-replica service.
 | `scaling.targetCPUUtilization` | integer                  | No       | `80`                     | Target average CPU percentage for the HPA.                             |
 | `expose.hostname`           | string                      | No\*     | —                        | Short hostname; the cluster base domain is appended.                   |
 | `expose.host`               | string                      | No\*     | —                        | Escape hatch: a full FQDN used verbatim.                               |
+| `expose.path`               | string                      | No       | `/`                      | PathPrefix this workload claims on the hostname (see [Sharing a hostname](#sharing-a-hostname)). |
 | `healthChecks.liveness`     | string                      | No       | `/api/v1/health/live`    | HTTP liveness path (served on `port`).                                 |
 | `healthChecks.readiness`    | string                      | No       | `/api/v1/health/ready`   | HTTP readiness path (served on `port`).                                |
 | `healthChecks.startup.path` | string                      | No       | liveness path            | HTTP startup-probe path (see [Startup probe](#startup-probe)).         |
@@ -100,6 +101,26 @@ time — developers do not configure it on the CR.
 | `development` | `my-service.dev.idp.rottlr.de`      |
 
 Use `expose.host` with a full FQDN to bypass the base-domain logic entirely.
+
+## Sharing a hostname
+
+By default a WebService claims the whole host (`expose.path: /`). Set `expose.path`
+to a sub-prefix so two WebServices can serve the *same* hostname — the typical
+SPA-plus-backend split:
+
+| Component | `expose`                           | Receives        |
+| --------- | ---------------------------------- | --------------- |
+| SPA       | `hostname: app`, `path: /`         | everything else |
+| Backend   | `hostname: app`, `path: /api`      | `/api/*`        |
+
+Both emit an `HTTPRoute` for `app.<base-domain>`; Gateway API merges them and routes
+the more specific prefix first, so `/api/*` reaches the backend and all other paths
+reach the SPA. The two workloads can live in different namespaces — the platform
+Gateway accepts routes from all namespaces.
+
+The prefix is **not** stripped: a backend on `path: /api` must serve its routes under
+`/api` (the `python-fastapi` golden path already mounts at `/api/v1`). No rewrite is
+applied, so the browser can call the backend same-origin with no CORS.
 
 ## Secret-backed config
 

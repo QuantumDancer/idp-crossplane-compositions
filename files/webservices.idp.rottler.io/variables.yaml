@@ -63,6 +63,8 @@
 {{- $fqdn := "" -}}
 {{- if $expose.host -}}{{- $fqdn = $expose.host -}}
 {{- else if $expose.hostname -}}{{- $fqdn = printf "%s.%s" $expose.hostname $baseDomain -}}{{- end -}}
+{{- /* PathPrefix this route claims; "/" (whole host) unless sharing a hostname. */ -}}
+{{- $exposePath := $expose.path | default "/" -}}
 
 {{- $env := $spec.env | default dict -}}
 {{- $envFrom := $spec.envFrom | default list -}}

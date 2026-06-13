@@ -127,6 +127,15 @@ spec:
                     host:
                       type: string
                       description: Escape hatch — a full FQDN used verbatim instead of hostname + base domain.
+                    path:
+                      type: string
+                      default: /
+                      pattern: ^/
+                      description: >
+                        PathPrefix this workload claims on the hostname. Defaults to "/" (the whole host).
+                        Set to e.g. "/api" to share a hostname with another WebService: Gateway API routes
+                        the more specific prefix first, so a backend on "/api" and an SPA on "/" can serve
+                        the same host. The prefix is NOT stripped — the workload must serve under it.
                   oneOf:
                     - required: [hostname]
                     - required: [host]
