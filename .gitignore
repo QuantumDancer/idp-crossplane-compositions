@@ -1,2 +1,5 @@
 site/
 tests/render/*/actual.yaml
+
+# Local secrets for manual testing
+.env
