@@ -24,7 +24,7 @@ The repo secret is an `ExternalSecret` that pulls the GitLab pull token from Vau
 | Field         | Type                                   | Required | Default   | Description                                                    |
 | ------------- | -------------------------------------- | -------- | --------- | -------------------------------------------------------------- |
 | `team`        | string                                 | **Yes**  | —         | Team name (e.g. `team-a`). Drives namespace and repo naming.   |
-| `environment` | `homelab \| development \| production` | No       | `homelab` | Target environment tier. Reserved for multi-cluster targeting. |
+| `environment` | `homelab \| development \| production` | **Yes**  | —         | Target environment tier. Reserved for multi-cluster targeting. |
 
 ## Quick Start
 

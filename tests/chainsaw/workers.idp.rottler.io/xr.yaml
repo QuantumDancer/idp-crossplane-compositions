@@ -2,10 +2,9 @@ apiVersion: idp.rottler.io/v1alpha1
 kind: Worker
 metadata:
   name: watermarkflow-worker
-  labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
 spec:
+  team: team-a
+  environment: homelab
   image:
     repository: gitlab.home.rottlr.de:5050/idp/team-a/watermarkflow-worker
     tag: "c9d0e1f2"

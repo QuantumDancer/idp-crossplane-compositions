@@ -35,6 +35,20 @@ spec:
             spec:
               type: object
               properties:
+                team:
+                  type: string
+                  description: >-
+                    Team that owns this resource (GitLab group / Backstage Group),
+                    e.g. team-a. Stamped onto every composed resource as the
+                    idp.rottler.io/team label.
+                environment:
+                  type: string
+                  description: >-
+                    Cluster environment. Stamped as the idp.rottler.io/environment label.
+                  enum:
+                    - homelab
+                    - development
+                    - production
                 compute:
                   type: string
                   enum:
@@ -100,6 +114,8 @@ spec:
                       type: string
                       description: "Vault KV v2 path for credentials (relative to 'secrets/' mount). Defaults to: idp/databases/{namespace}/{databaseName}"
               required:
+                - team
+                - environment
                 - compute
                 - storage
                 - version

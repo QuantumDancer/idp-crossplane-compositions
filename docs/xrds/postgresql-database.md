@@ -14,10 +14,9 @@ kind: PostgreSQLDatabase
 metadata:
   name: order-db
   namespace: team-a-order-management-order-service
-  labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
 spec:
+  team: team-a
+  environment: homelab
   compute: small
   storage: 2Gi
   version: "17"
@@ -33,6 +32,8 @@ The composition creates:
 
 | Field                        | Type                                           | Required | Default                                    | Description                                                              |
 | ---------------------------- | ---------------------------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| `team`                       | string                                         | **Yes**  | —                                          | Owning team. Stamped as the `idp.rottler.io/team` label.                 |
+| `environment`                | `homelab \| development \| production`         | **Yes**  | —                                          | Cluster environment. Stamped as the `idp.rottler.io/environment` label.  |
 | `compute`                    | `small \| medium \| large`                     | **Yes**  | —                                          | CPU and memory tier (see [Compute Tiers](#compute-tiers))                |
 | `storage`                    | string                                         | Yes      | `"2Gi"`                                    | Persistent volume size. Pattern: `^[0-9]+(Mi\|Gi)$`                      |
 | `version`                    | `"13"` \| `"14"` \| `"15"` \| `"16"` \| `"17"` | Yes      | `"17"`                                     | PostgreSQL major version                                                 |
@@ -128,10 +129,10 @@ metadata:
   name: order-db
   namespace: team-a-order-management-order-service
   labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
     idp.rottler.io/tier: dev
 spec:
+  team: team-a
+  environment: homelab
   compute: small
   storage: 5Gi
   version: "17"

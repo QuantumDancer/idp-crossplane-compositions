@@ -4,7 +4,8 @@
 {{- $owner := .observed.composite.resource.spec.owner | default $xrName -}}
 {{- $secretType := .observed.composite.resource.spec.connectionSecret.type | default "pull" -}}
 {{- $vaultPath := .observed.composite.resource.spec.connectionSecret.vaultPath | default (printf "idp/databases/%s/%s" $namespace $databaseName) -}}
-{{- $environment := index .observed.composite.resource.metadata.labels "idp.rottler.io/environment" | default "homelab" -}}
+{{- $team := .observed.composite.resource.spec.team -}}
+{{- $environment := .observed.composite.resource.spec.environment -}}
 {{- $computeTier := .observed.composite.resource.spec.compute -}}
 {{- $secretName := printf "%s-credentials" $xrName -}}
 
@@ -46,7 +47,7 @@
   "app.kubernetes.io/instance" $xrName
   "app.kubernetes.io/component" "database"
   "app.kubernetes.io/managed-by" "crossplane"
-  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
-  "idp.rottler.io/environment" (index .observed.composite.resource.metadata.labels "idp.rottler.io/environment")
+  "idp.rottler.io/team" $team
+  "idp.rottler.io/environment" $environment
   "idp.rottler.io/tier" (index .observed.composite.resource.metadata.labels "idp.rottler.io/tier")
 -}}

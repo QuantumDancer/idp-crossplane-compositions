@@ -11,7 +11,8 @@ use [Worker](worker.md).
 
 ## Quick Start
 
-Minimal example — everything except `image`, `port`, and `compute` is defaulted:
+Minimal example — everything except `team`, `environment`, `image`, `port`, and
+`compute` is defaulted:
 
 ```yaml
 apiVersion: idp.rottler.io/v1alpha1
@@ -19,10 +20,9 @@ kind: WebService
 metadata:
   name: my-service
   namespace: team-a-my-system-my-service
-  labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
 spec:
+  team: team-a
+  environment: homelab
   image:
     repository: gitlab.home.rottlr.de:5050/idp/team-a/my-service
     tag: "1.0.0"
@@ -47,6 +47,8 @@ No HPA and no PodDisruptionBudget are created for a single-replica service.
 
 | Field                       | Type                        | Required | Default                  | Description                                                            |
 | --------------------------- | --------------------------- | -------- | ------------------------ | ---------------------------------------------------------------------- |
+| `team`                      | string                      | **Yes**  | —                        | Owning team. Stamped as the `idp.rottler.io/team` label on every composed resource. |
+| `environment`               | `homelab \| development \| production` | **Yes** | —             | Cluster environment. Stamped as the `idp.rottler.io/environment` label. |
 | `image.repository`          | string                      | **Yes**  | —                        | Image repository (without tag).                                        |
 | `image.tag`                 | string                      | No       | `""`                     | Image tag. CI writes this on every push.                               |
 | `backstageComponent`        | string                      | No       | XR name                  | `backstage.io/kubernetes-id` label value (see [Backstage discovery](#backstage-discovery)). |

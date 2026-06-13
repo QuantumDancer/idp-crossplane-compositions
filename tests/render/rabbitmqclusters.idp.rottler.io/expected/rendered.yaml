@@ -38,6 +38,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-cluster
     crossplane.io/composite: team-a-rabbitmq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: team-a-rabbitmq
   namespace: team-a-infra

@@ -73,6 +73,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-binding-order-created
   namespace: team-a-order-management-order-service
@@ -104,6 +105,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-binding-order-processed
   namespace: team-a-order-management-order-service
@@ -135,6 +137,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-binding-order-retry
   namespace: team-a-order-management-order-service
@@ -166,6 +169,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-exchange-orders
   namespace: team-a-order-management-order-service
@@ -196,6 +200,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-permission
   namespace: team-a-order-management-order-service
@@ -228,6 +233,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-queue-order-created
   namespace: team-a-order-management-order-service
@@ -258,6 +264,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-queue-order-processed
   namespace: team-a-order-management-order-service
@@ -288,6 +295,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-queue-order-retry
   namespace: team-a-order-management-order-service
@@ -322,6 +330,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-queue-order-retry-dlq
   namespace: team-a-order-management-order-service
@@ -352,6 +361,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-user
   namespace: team-a-order-management-order-service
@@ -380,6 +390,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-vhost
   namespace: team-a-order-management-order-service
@@ -407,6 +418,7 @@ metadata:
     app.kubernetes.io/managed-by: crossplane
     app.kubernetes.io/name: rabbitmq-instance
     crossplane.io/composite: order-service-mq
+    idp.rottler.io/environment: homelab
     idp.rottler.io/team: team-a
   name: order-service-mq-connection
   namespace: team-a-order-management-order-service

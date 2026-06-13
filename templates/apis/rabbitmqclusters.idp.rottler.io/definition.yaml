@@ -41,7 +41,18 @@ spec:
               properties:
                 team:
                   type: string
-                  description: Team name. Must match the idp.rottler.io/team label.
+                  description: >-
+                    Team that owns this resource (GitLab group / Backstage Group),
+                    e.g. team-a. Stamped onto every composed resource as the
+                    idp.rottler.io/team label.
+                environment:
+                  type: string
+                  description: >-
+                    Cluster environment. Stamped as the idp.rottler.io/environment label.
+                  enum:
+                    - homelab
+                    - development
+                    - production
                 ha:
                   type: boolean
                   default: false
@@ -76,6 +87,7 @@ spec:
                     must appear here. Use ["*"] to allow all namespaces.
               required:
                 - team
+                - environment
                 - allowedNamespaces
             status:
               type: object

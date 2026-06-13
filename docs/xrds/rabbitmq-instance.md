@@ -24,6 +24,8 @@ For a service `order-service` with one exchange and two queues:
 
 | Field        | Type                      | Required | Default      | Description                                                                                                |
 | ------------ | ------------------------- | -------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| `team`        | string                   | **Yes**  | —            | Owning team. Stamped as the `idp.rottler.io/team` label on every composed resource.                       |
+| `environment` | `homelab \| development \| production` | **Yes** | — | Cluster environment. Stamped as the `idp.rottler.io/environment` label.                                  |
 | `clusterRef` | object                    | **Yes**  | —            | Reference to the team's `RabbitMQCluster` (see below).                                                     |
 | `durability` | `persistent \| ephemeral` | No       | `persistent` | `persistent`: durable queues/exchanges, survive broker restart. `ephemeral`: non-durable, lost on restart. |
 | `exchanges`  | array                     | No       | `[]`         | Exchanges to create. Only needed for topic/fanout routing patterns.                                        |
@@ -64,9 +66,9 @@ kind: RabbitMQInstance
 metadata:
   name: order-service-mq
   namespace: team-a-order-management-order-service
-  labels:
-    idp.rottler.io/team: team-a
 spec:
+  team: team-a
+  environment: homelab
   clusterRef:
     name: team-a-rabbitmq
     namespace: team-a-infra

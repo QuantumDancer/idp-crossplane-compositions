@@ -50,6 +50,6 @@ spec:
                     - homelab
                     - development
                     - production
-                  default: homelab
               required:
                 - team
+                - environment

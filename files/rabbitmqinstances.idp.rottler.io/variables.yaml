@@ -1,5 +1,7 @@
 {{- $xrName := .observed.composite.resource.metadata.name -}}
 {{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $team := .observed.composite.resource.spec.team -}}
+{{- $environment := .observed.composite.resource.spec.environment -}}
 {{- $clusterName := .observed.composite.resource.spec.clusterRef.name -}}
 {{- $clusterNamespace := .observed.composite.resource.spec.clusterRef.namespace -}}
 {{- $vhostName := printf "%s-%s" $namespace $xrName -}}
@@ -21,5 +23,6 @@
   "app.kubernetes.io/instance" $xrName
   "app.kubernetes.io/component" "messaging"
   "app.kubernetes.io/managed-by" "crossplane"
-  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+  "idp.rottler.io/team" $team
+  "idp.rottler.io/environment" $environment
 -}}

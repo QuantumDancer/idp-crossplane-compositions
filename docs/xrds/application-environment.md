@@ -23,7 +23,7 @@ The ArgoCD Application tracks the component's deployment repo (`idp/team-a/order
 | `team`        | string                                 | **Yes**  | —         | GitLab group / Backstage Group (e.g. `team-a`). Drives namespace naming and RBAC bindings. |
 | `system`      | string                                 | **Yes**  | —         | Backstage System the component belongs to (e.g. `order-management`)                        |
 | `component`   | string                                 | **Yes**  | —         | Backstage Component name (e.g. `order-service`)                                            |
-| `environment` | `homelab \| development \| production` | No       | `homelab` | Target environment tier                                                                    |
+| `environment` | `homelab \| development \| production` | **Yes**  | —         | Target environment tier                                                                    |
 
 ## Example
 

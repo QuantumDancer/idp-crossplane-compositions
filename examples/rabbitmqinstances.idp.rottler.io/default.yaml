@@ -3,9 +3,9 @@ kind: RabbitMQInstance
 metadata:
   name: order-service-mq
   namespace: team-a-order-management-order-service
-  labels:
-    idp.rottler.io/team: team-a
 spec:
+  team: team-a
+  environment: homelab
   clusterRef:
     name: team-a-rabbitmq
     namespace: team-a-infra

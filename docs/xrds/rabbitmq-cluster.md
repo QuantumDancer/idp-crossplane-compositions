@@ -19,7 +19,8 @@ The RabbitmqCluster name follows `<team>-rabbitmq`. In HA mode, a `PodDisruption
 
 | Field                | Type     | Required | Default   | Description                                                                                                                      |
 | -------------------- | -------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `team`               | string   | **Yes**  | —         | Team name. Must match the `idp.rottler.io/team` label.                                                                           |
+| `team`               | string   | **Yes**  | —         | Owning team. Stamped as the `idp.rottler.io/team` label on every composed resource.                                              |
+| `environment`        | `homelab \| development \| production` | **Yes** | — | Cluster environment. Stamped as the `idp.rottler.io/environment` label.                                       |
 | `allowedNamespaces`  | string[] | **Yes**  | —         | Namespaces permitted to create topology resources against this cluster. List every `RabbitMQInstance` namespace, or `["*"]` for all. |
 | `ha`                 | boolean  | No       | `false`   | `false`: 1 replica. `true`: 3 replicas with pod anti-affinity across nodes. **Immutable after creation.**                       |
 | `version`            | string   | No       | `"3.13"`  | RabbitMQ container image version (e.g. `"3.13"`).                                                                                |
@@ -35,10 +36,9 @@ kind: RabbitMQCluster
 metadata:
   name: team-a-rabbitmq
   namespace: team-a-infra
-  labels:
-    idp.rottler.io/team: team-a
 spec:
   team: team-a
+  environment: homelab
   allowedNamespaces:
     - team-a-order-service
     - team-a-payment-service
@@ -52,10 +52,9 @@ kind: RabbitMQCluster
 metadata:
   name: team-a-rabbitmq
   namespace: team-a-infra
-  labels:
-    idp.rottler.io/team: team-a
 spec:
   team: team-a
+  environment: homelab
   ha: true
   version: "3.13"
   storageSize: large

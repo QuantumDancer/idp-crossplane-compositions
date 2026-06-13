@@ -3,10 +3,9 @@ kind: RabbitMQCluster
 metadata:
   name: team-a-rabbitmq
   namespace: team-a-infra
-  labels:
-    idp.rottler.io/team: team-a
 spec:
   team: team-a
+  environment: homelab
   ha: false
   version: "3.13"
   storageSize: small

@@ -59,8 +59,8 @@ spec:
                     - homelab
                     - development
                     - production
-                  default: homelab
               required:
                 - team
                 - system
                 - component
+                - environment

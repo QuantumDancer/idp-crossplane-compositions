@@ -3,10 +3,9 @@ kind: WebService
 metadata:
   name: my-service
   namespace: team-a-my-system-my-service
-  labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
 spec:
+  team: team-a
+  environment: homelab
   image:
     repository: gitlab.home.rottlr.de:5050/idp/team-a/my-service
     tag: "1.0.0"

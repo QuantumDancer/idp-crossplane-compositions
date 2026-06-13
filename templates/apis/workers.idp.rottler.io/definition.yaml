@@ -38,6 +38,20 @@ spec:
             spec:
               type: object
               properties:
+                team:
+                  type: string
+                  description: >-
+                    Team that owns this resource (GitLab group / Backstage Group),
+                    e.g. team-a. Stamped onto every composed resource as the
+                    idp.rottler.io/team label.
+                environment:
+                  type: string
+                  description: >-
+                    Cluster environment. Stamped as the idp.rottler.io/environment label.
+                  enum:
+                    - homelab
+                    - development
+                    - production
                 image:
                   type: object
                   description: Container image to run.
@@ -196,6 +210,8 @@ spec:
                         Requires enabled: true.
                   default: {}
               required:
+                - team
+                - environment
                 - image
                 - compute
             status:

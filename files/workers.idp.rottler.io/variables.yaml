@@ -1,7 +1,8 @@
 {{- $xrName := .observed.composite.resource.metadata.name -}}
 {{- $namespace := .observed.composite.resource.metadata.namespace -}}
 {{- $spec := .observed.composite.resource.spec -}}
-{{- $environment := index .observed.composite.resource.metadata.labels "idp.rottler.io/environment" | default "homelab" -}}
+{{- $team := $spec.team -}}
+{{- $environment := $spec.environment -}}
 
 {{- $imageRepo := $spec.image.repository -}}
 {{- $imageTag := $spec.image.tag | default "" -}}
@@ -69,6 +70,6 @@
   "app.kubernetes.io/component" "worker"
   "app.kubernetes.io/managed-by" "crossplane"
   "backstage.io/kubernetes-id" $backstageComponent
-  "idp.rottler.io/team" (index .observed.composite.resource.metadata.labels "idp.rottler.io/team")
+  "idp.rottler.io/team" $team
   "idp.rottler.io/environment" $environment
 ) $selectorLabels -}}

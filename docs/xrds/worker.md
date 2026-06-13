@@ -19,10 +19,9 @@ kind: Worker
 metadata:
   name: my-worker
   namespace: team-a-my-system-my-worker
-  labels:
-    idp.rottler.io/team: team-a
-    idp.rottler.io/environment: homelab
 spec:
+  team: team-a
+  environment: homelab
   image:
     repository: gitlab.home.rottlr.de:5050/idp/team-a/my-worker
     tag: "1.0.0"
@@ -50,6 +49,8 @@ The composition creates:
 
 | Field                            | Type                       | Required | Default      | Description                                                          |
 | -------------------------------- | -------------------------- | -------- | ------------ | -------------------------------------------------------------------- |
+| `team`                           | string                     | **Yes**  | —            | Owning team. Stamped as the `idp.rottler.io/team` label on every composed resource. |
+| `environment`                    | `homelab \| development \| production` | **Yes** | — | Cluster environment. Stamped as the `idp.rottler.io/environment` label. |
 | `image.repository`               | string                     | **Yes**  | —            | Image repository (without tag).                                      |
 | `image.tag`                      | string                     | No       | `""`         | Image tag. CI writes this on every push.                             |
 | `backstageComponent`             | string                     | No       | XR name      | `backstage.io/kubernetes-id` label value (see [WebService](web-service.md#backstage-discovery)). |
