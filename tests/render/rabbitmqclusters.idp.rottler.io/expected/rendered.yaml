@@ -53,4 +53,7 @@ spec:
   image: rabbitmq:3.13-management
   persistence:
     storage: 1Gi
+  rabbitmq:
+    additionalConfig: |
+      disk_free_limit.absolute = 256MB
   replicas: 1

@@ -17,6 +17,12 @@ spec:
   image: rabbitmq:{{ $version }}-management
   persistence:
     storage: {{ $storageSize }}
+  rabbitmq:
+    # Override the operator's default disk_free_limit.absolute=2GB, which exceeds
+    # the smaller PVCs and keeps the disk-free alarm permanently on (it blocks all
+    # publishers). Sized per storage tier in variables.yaml.
+    additionalConfig: |
+      disk_free_limit.absolute = {{ $diskFreeLimit }}
   {{- if $ha }}
   # Spread replicas across nodes to survive single-node failures.
   affinity:

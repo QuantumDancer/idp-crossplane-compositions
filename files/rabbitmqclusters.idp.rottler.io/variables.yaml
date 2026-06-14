@@ -9,7 +9,14 @@
   {{- $replicas = 3 -}}
 {{- end -}}
 {{- $storageSizeMap := dict "small" "1Gi" "medium" "10Gi" "large" "20Gi" "x-large" "50Gi" -}}
-{{- $storageSize := index $storageSizeMap (.observed.composite.resource.spec.storageSize | default "small") -}}
+{{- $storageSizeKey := .observed.composite.resource.spec.storageSize | default "small" -}}
+{{- $storageSize := index $storageSizeMap $storageSizeKey -}}
+{{- /* disk_free_limit must stay well below the PVC size, otherwise the broker's
+       disk-free alarm is permanently active and blocks all publishers. The
+       cluster-operator default is disk_free_limit.absolute=2GB, which exceeds the
+       1Gi "small" PVC and made it unusable — so we override it per storage tier. */ -}}
+{{- $diskFreeLimitMap := dict "small" "256MB" "medium" "1GB" "large" "2GB" "x-large" "4GB" -}}
+{{- $diskFreeLimit := index $diskFreeLimitMap $storageSizeKey -}}
 {{- $allowedNamespaces := .observed.composite.resource.spec.allowedNamespaces | default (list) -}}
 {{- $allowedNamespacesValue := join "," $allowedNamespaces -}}
 
