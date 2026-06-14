@@ -11,8 +11,13 @@
 {{- $exchanges := .observed.composite.resource.spec.exchanges | default (list) -}}
 {{- $queues := .observed.composite.resource.spec.queues | default (list) -}}
 {{- $password := randAlphaNum 32 -}}
-{{- if .observed.composedResources -}}
-  {{- $observedSecret := index .observed.composedResources "connection-secret" -}}
+{{- /* Reuse the password from the already-applied connection Secret so it stays
+       stable across reconciles. function-go-templating exposes observed composed
+       resources under .observed.resources (NOT .observed.composedResources) — the
+       wrong key left this branch dead, regenerating the password every reconcile
+       so it diverged from the RabbitMQ user created on the first apply. */ -}}
+{{- if .observed.resources -}}
+  {{- $observedSecret := index .observed.resources "connection-secret" -}}
   {{- if and $observedSecret $observedSecret.resource.data.password -}}
     {{- $password = $observedSecret.resource.data.password | b64dec -}}
   {{- end -}}
