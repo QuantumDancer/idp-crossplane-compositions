@@ -70,7 +70,10 @@
 {{- $envFrom := $spec.envFrom | default list -}}
 
 {{- $metrics := $spec.metrics | default dict -}}
-{{- $metricsEnabled := $metrics.enabled | default true -}}
+{{- /* `default` treats the boolean false as empty, so read enabled explicitly to
+       preserve metrics.enabled: false (e.g. a static SPA with no /metrics endpoint). */ -}}
+{{- $metricsEnabled := true -}}
+{{- if hasKey $metrics "enabled" -}}{{- $metricsEnabled = $metrics.enabled -}}{{- end -}}
 {{- $metricsPath := $metrics.path | default "/metrics" -}}
 
 {{- $access := $spec.kubernetesAccess | default dict -}}
