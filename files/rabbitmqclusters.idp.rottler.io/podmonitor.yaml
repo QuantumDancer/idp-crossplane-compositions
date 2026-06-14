@@ -1,0 +1,32 @@
+---
+# Observability at birth: scrape the broker's rabbitmq_prometheus endpoint so queue
+# depth, publish/deliver rates and connection/disk-alarm state are visible from the
+# moment the cluster exists — the same way WebService scrapes its workloads.
+#
+# A PodMonitor (not a ServiceMonitor) is used deliberately: the operator's headless
+# Service load-balances a scrape across all pods, which collapses per-node series in
+# HA mode (replicas: 3). Scraping each pod directly keeps per-node metrics distinct.
+# This matches the RabbitMQ Cluster Operator's own monitoring guidance.
+#
+# The selector targets the operator-managed pod labels (app.kubernetes.io/name is the
+# cluster name, part-of is a constant), not our composed $labels — the operator owns
+# the pods and stamps its own labels on them. namespaceSelector defaults to this
+# PodMonitor's own namespace, which is where the cluster runs.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ $xrName }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: podmonitor
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $xrName }}
+      app.kubernetes.io/part-of: rabbitmq
+  podMetricsEndpoints:
+    - port: prometheus
+      path: /metrics

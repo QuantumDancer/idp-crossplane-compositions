@@ -33,3 +33,10 @@ rules:
   - get
   - list
   - watch
+# PodMonitor for scraping the broker's rabbitmq_prometheus endpoint (see
+# files/.../podmonitor.yaml). Without this grant Crossplane cannot apply it.
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - podmonitors
+  verbs: [get, list, watch, create, update, patch, delete]

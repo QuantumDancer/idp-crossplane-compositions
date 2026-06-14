@@ -29,4 +29,5 @@ spec:
         template: |
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/variables.yaml" | nindent 10 }}
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/cluster.yaml" | nindent 10 }}
+          {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/podmonitor.yaml" | nindent 10 }}
           {{- .Files.Get "files/rabbitmqclusters.idp.rottler.io/status.yaml" | nindent 10 }}
