@@ -59,6 +59,18 @@ spec:
                     - homelab
                     - development
                     - production
+                targetNamespace:
+                  type: string
+                  description: >
+                    Deploy into an existing namespace instead of creating one. When set, the
+                    composition skips the Namespace resource and points the ArgoCD Application's
+                    destination at this namespace. Used for backend+worker co-location (a worker
+                    targets its backend's namespace to share the messaging connection secret and
+                    KEDA TriggerAuthentication). Must name an existing IDP-managed namespace owned
+                    by a sibling component; the owning component lifecycles it. Defaults to
+                    creating <team>-<system>-<component>.
+                  maxLength: 63
+                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
               required:
                 - team
                 - system

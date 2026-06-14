@@ -1,0 +1,20 @@
+# Patterns to ignore when packaging the chart.
+# Only Chart.yaml, values.yaml, environments/, templates/, and files/ are needed
+# at install time. Everything else here is repo tooling, tests, or generated
+# output — bundling it bloats the Helm release Secret past Kubernetes' 3 MB limit
+# (notably a local .venv or a built mkdocs site/).
+.git/
+.gitignore
+.venv/
+site/
+tests/
+examples/
+docs/
+scripts/
+*.md
+mkdocs.yml
+renovate.json
+catalog-info.yaml
+# Local CLI binaries downloaded for render tests
+crank
+crossplane-server

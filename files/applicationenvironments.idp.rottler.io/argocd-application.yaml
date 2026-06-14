@@ -23,7 +23,7 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ printf "%s-%s-%s" $team $system $component }}
+    namespace: {{ $namespace }}
 
   syncPolicy:
     automated:

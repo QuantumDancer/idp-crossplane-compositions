@@ -1,0 +1,7 @@
+# Co-located components must NOT compose their own Namespace — the worker shares
+# the backend's. Asserted via chainsaw's `error` op: the test fails if a Namespace
+# matching this name exists.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a-order-management-order-worker

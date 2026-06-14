@@ -2,4 +2,18 @@
 {{- $system := .observed.composite.resource.spec.system -}}
 {{- $component := .observed.composite.resource.spec.component -}}
 {{- $environment := .observed.composite.resource.spec.environment -}}
+{{- $targetNamespace := .observed.composite.resource.spec.targetNamespace | default "" -}}
+
+{{/*
+  $namespace is where the component deploys. By default each component owns a
+  namespace named <team>-<system>-<component>; setting spec.targetNamespace
+  co-locates it into a sibling's namespace instead (gap 2 — backend+worker share
+  one namespace so the worker reuses the messaging secret and TriggerAuthentication).
+  When co-located, namespace.yaml skips creating the Namespace so the worker's
+  ArgoCD app never prunes the backend-owned one.
+*/}}
+{{- $namespace := $targetNamespace -}}
+{{- if not $namespace -}}
+{{- $namespace = printf "%s-%s-%s" $team $system $component -}}
+{{- end -}}
 

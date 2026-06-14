@@ -1,0 +1,17 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: ApplicationEnvironment
+metadata:
+  name: team-a-order-management-order-worker
+  labels:
+    idp.rottler.io/team: team-a
+    idp.rottler.io/system: order-management
+    idp.rottler.io/component: order-worker
+spec:
+  team: team-a
+  system: order-management
+  component: order-worker
+  environment: homelab
+  # Co-locate into the backend's namespace (gap 2). The worker does not own a
+  # namespace; it shares the backend's so it reuses the messaging connection
+  # secret and KEDA TriggerAuthentication.
+  targetNamespace: team-a-order-management-order-service

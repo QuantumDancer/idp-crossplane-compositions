@@ -1,0 +1,47 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: application-environment-colocated
+spec:
+  steps:
+  - name: apply-xr
+    try:
+    - apply:
+        file: xr.yaml
+    # The ArgoCD Application deploys into the backend's namespace, and the repo
+    # secret still carries the worker's own component-prefixed name.
+    - assert:
+        file: assert/argocd-application.yaml
+    - assert:
+        file: assert/argocd-repo-secret.yaml
+    # The worker must not own a namespace — co-location skips the Namespace so the
+    # worker's ArgoCD app never prunes the backend-owned one.
+    - error:
+        file: assert/no-namespace.yaml
+    # See the sibling (non-co-located) test for why this asserts Synced rather than
+    # Ready, and why the JMESPath lives at the root.
+    - assert:
+        resource:
+          apiVersion: idp.rottler.io/v1alpha1
+          kind: ApplicationEnvironment
+          metadata:
+            name: team-a-order-management-order-worker
+          (status.conditions[?type=='Synced'].status | [0]): "True"
+    catch:
+    - script:
+        content: |
+          kubectl describe applicationenvironment team-a-order-management-order-worker || true
+          echo "--- Crossplane events ---"
+          kubectl get events -A --field-selector reason=ComposeResources 2>/dev/null || true
+    - podLogs:
+        namespace: crossplane-system
+        selector: app=crossplane
+    finally:
+    # Strip the ArgoCD resources-finalizer so teardown isn't blocked by the absent
+    # ArgoCD controller (same rationale as the sibling test).
+    - script:
+        content: |
+          kubectl patch application team-a-order-management-order-worker \
+            -n argocd \
+            --type=json \
+            -p='[{"op":"remove","path":"/metadata/finalizers"}]' || true

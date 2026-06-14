@@ -24,6 +24,7 @@ The ArgoCD Application tracks the component's deployment repo (`idp/team-a/order
 | `system`      | string                                 | **Yes**  | —         | Backstage System the component belongs to (e.g. `order-management`)                        |
 | `component`   | string                                 | **Yes**  | —         | Backstage Component name (e.g. `order-service`)                                            |
 | `environment` | `homelab \| development \| production` | **Yes**  | —         | Target environment tier                                                                    |
+| `targetNamespace` | string                             | No       | —         | Deploy into an existing namespace instead of creating `{team}-{system}-{component}`. See [Co-location](#co-location). |
 
 ## Example
 
@@ -64,6 +65,25 @@ valueFiles:
   - values.yaml
   - environments/{environment}.yaml
 ```
+
+## Co-location
+
+By default each component owns a namespace named `{team}-{system}-{component}`. Setting `targetNamespace` makes a component deploy into an existing namespace instead: the composition skips the `Namespace` resource and points the ArgoCD `Application` destination at the named namespace.
+
+This exists for the **backend + worker pair**: a queue worker must share its backend's RabbitMQ vhost connection secret and KEDA `TriggerAuthentication`, both of which are namespace-local. The worker sets `targetNamespace` to the backend's namespace and the pair co-locates.
+
+```yaml
+spec:
+  team: team-a
+  system: order-management
+  component: order-worker
+  environment: homelab
+  targetNamespace: team-a-order-management-order-service  # the backend's namespace
+```
+
+Safe because the `Application` name, repo secret, and all chart resource names stay component-prefixed — two apps syncing one namespace don't collide. The `Namespace` is the only resource coupled 1:1 to a component, and the co-located worker never composes it, so it never prunes the backend-owned namespace.
+
+Trade-offs (see the gap 2 decision in `PLATFORM-ASSESSMENT.md`): the namespace is owned and lifecycled by the component that creates it — deleting the backend's `ApplicationEnvironment` removes the shared namespace and thus the worker's runtime. Namespace-level secret isolation between the pair is gone; credential scoping is enforced at the pod level instead.
 
 ## Decommissioning
 

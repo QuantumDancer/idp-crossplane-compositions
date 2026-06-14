@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: team-a-order-management-order-worker
+  namespace: argocd
+spec:
+  project: team-a
+  source:
+    repoURL: https://gitlab.home.rottlr.de/idp/team-a/order-management-order-worker-deployment.git
+    targetRevision: development
+  destination:
+    # Points at the backend's namespace, not the worker's component name.
+    namespace: team-a-order-management-order-service
