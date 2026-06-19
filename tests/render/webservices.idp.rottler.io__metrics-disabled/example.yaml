@@ -1,0 +1,33 @@
+# Same as the default WebService example but with metrics.enabled: false — a
+# service with no /metrics endpoint (e.g. a static SPA). The composition reads
+# this with hasKey and must compose NO ServiceMonitor; everything else renders
+# unchanged. Asserted by the absence of a ServiceMonitor in expected/rendered.yaml.
+apiVersion: idp.rottler.io/v1alpha1
+kind: WebService
+metadata:
+  name: my-service
+  namespace: team-a-my-system-my-service
+spec:
+  team: team-a
+  environment: homelab
+  image:
+    repository: gitlab.home.rottlr.de:5050/idp/team-a/my-service
+    tag: "1.0.0"
+  port: 8000
+  compute: small
+  scaling:
+    min: 1
+    max: 5
+  expose:
+    hostname: my-service
+  metrics:
+    enabled: false
+  env:
+    LOG_LEVEL: info
+  envFrom:
+    - secretRef: my-service-db
+    - vaultPath: idp/team-a/my-system/my-service-config
+      name: config
+  kubernetesAccess:
+    enabled: true
+    preset: view-workloads

@@ -46,3 +46,25 @@ spec:
     - describe:
         apiVersion: idp.rottler.io/v1alpha1
         kind: WebService
+  # Covers metrics.enabled: false — the composition must still compose the
+  # Service (pipeline ran) but compose NO ServiceMonitor. The render goldens
+  # cover the same branch; this guards it end-to-end against the live XRD schema.
+  - name: apply-xr-no-metrics
+    try:
+    - apply:
+        file: xr-no-metrics.yaml
+    - assert:
+        file: assert/service-no-metrics.yaml
+    # error asserts the resource does NOT exist: if a ServiceMonitor named
+    # watermarkflow-static were composed, this match would succeed and the step
+    # would fail.
+    - error:
+        resource:
+          apiVersion: monitoring.coreos.com/v1
+          kind: ServiceMonitor
+          metadata:
+            name: watermarkflow-static
+    catch:
+    - describe:
+        apiVersion: idp.rottler.io/v1alpha1
+        kind: WebService

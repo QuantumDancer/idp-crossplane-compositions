@@ -1,0 +1,16 @@
+# Mocked observed state for the reconcile-time render path: the connection
+# Secret the composition already applied on a previous reconcile, with a known
+# password. variables.yaml reads this back via index .observed.resources
+# "connection-secret" and must reuse it instead of calling randAlphaNum again,
+# keeping the generated password stable across reconciles (otherwise it diverges
+# from the RabbitMQ user created on first apply). The password below is a fixed
+# test value, base64-decodes to: reused-stable-password-1234567890
+apiVersion: v1
+kind: Secret
+metadata:
+  name: order-service-mq-connection
+  namespace: team-a-order-management-order-service
+  annotations:
+    crossplane.io/composition-resource-name: connection-secret
+data:
+  password: cmV1c2VkLXN0YWJsZS1wYXNzd29yZC0xMjM0NTY3ODkw

@@ -1,0 +1,4 @@
+# With metrics.enabled: false the composition must compose NO ServiceMonitor.
+# If the hasKey guard in variables.yaml regresses, the ServiceMonitor reappears
+# and this check fails.
+kind: ServiceMonitor

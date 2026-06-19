@@ -8,14 +8,35 @@
 {{- if $ha -}}
   {{- $replicas = 3 -}}
 {{- end -}}
-{{- $storageSizeMap := dict "small" "1Gi" "medium" "10Gi" "large" "20Gi" "x-large" "50Gi" -}}
+{{- /* Per-tier sizing for memory, disk_free_limit, and PVC, kept in lock-step.
+       RabbitMQ best practice is disk_free_limit >= RAM, and the PVC must
+       comfortably exceed RAM so the broker has room for messages, mnesia, and
+       the disk_free_limit headroom on top of the high-watermark working set.
+       We size each tier as:
+
+         tier      RAM    disk_free_limit    PVC      notes
+         small     1Gi    2GB  (~1.9x RAM)   5Gi      modest dev tier
+         medium    2Gi    4GB  (~1.9x RAM)   20Gi
+         large     4Gi    8GB  (~1.9x RAM)   40Gi
+         x-large   8Gi    16GB (~1.9x RAM)   80Gi
+
+       Invariants held for every tier:
+         - disk_free_limit > RAM        (best practice; e.g. small 2GB > 1Gi=1.07GB)
+         - PVC > RAM (~5x)              (working set + headroom)
+         - disk_free_limit << PVC (~40%) so the disk-free alarm is not permanently
+           active — that alarm blocks all publishers.
+
+       RAM is the lever: the cluster-operator derives the memory high-watermark
+       from the pod memory limit, so cluster.yaml sets spec.resources
+       requests+limits memory from $memory. disk_free_limit uses decimal SI units
+       (GB) as the RabbitMQ config expects; k8s resources and the PVC use binary
+       units (Gi). */ -}}
+{{- $storageSizeMap := dict "small" "5Gi" "medium" "20Gi" "large" "40Gi" "x-large" "80Gi" -}}
 {{- $storageSizeKey := .observed.composite.resource.spec.storageSize | default "small" -}}
 {{- $storageSize := index $storageSizeMap $storageSizeKey -}}
-{{- /* disk_free_limit must stay well below the PVC size, otherwise the broker's
-       disk-free alarm is permanently active and blocks all publishers. The
-       cluster-operator default is disk_free_limit.absolute=2GB, which exceeds the
-       1Gi "small" PVC and made it unusable — so we override it per storage tier. */ -}}
-{{- $diskFreeLimitMap := dict "small" "256MB" "medium" "1GB" "large" "2GB" "x-large" "4GB" -}}
+{{- $memoryMap := dict "small" "1Gi" "medium" "2Gi" "large" "4Gi" "x-large" "8Gi" -}}
+{{- $memory := index $memoryMap $storageSizeKey -}}
+{{- $diskFreeLimitMap := dict "small" "2GB" "medium" "4GB" "large" "8GB" "x-large" "16GB" -}}
 {{- $diskFreeLimit := index $diskFreeLimitMap $storageSizeKey -}}
 {{- $allowedNamespaces := .observed.composite.resource.spec.allowedNamespaces | default (list) -}}
 {{- $allowedNamespacesValue := join "," $allowedNamespaces -}}

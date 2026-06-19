@@ -1,0 +1,474 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: deployment
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-service
+      app.kubernetes.io/name: my-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: web-service
+        app.kubernetes.io/instance: my-service
+        app.kubernetes.io/managed-by: crossplane
+        app.kubernetes.io/name: my-service
+        backstage.io/kubernetes-id: my-service
+        idp.rottler.io/environment: homelab
+        idp.rottler.io/team: team-a
+    spec:
+      containers:
+      - env:
+        - name: LOG_LEVEL
+          value: info
+        envFrom:
+        - secretRef:
+            name: my-service-db
+        - secretRef:
+            name: my-service-config
+        image: gitlab.home.rottlr.de:5050/idp/team-a/my-service:1.0.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: my-service
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /api/v1/health/live
+            port: http
+          periodSeconds: 2
+      imagePullSecrets:
+      - name: my-service-image-pull
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: my-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: hpa
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 80
+        type: Utilization
+    type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-service
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: env-secret-config
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service-config
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: idp/team-a/my-system/my-service-config
+      metadataPolicy: None
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-service-config
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: image-pull-secret
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service-image-pull
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  data:
+  - remoteRef:
+      key: idp/platform/argocd/idp-group-pull-secret
+      property: username
+    secretKey: username
+  - remoteRef:
+      key: idp/platform/argocd/idp-group-pull-secret
+      property: password
+    secretKey: password
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    creationPolicy: Owner
+    name: my-service-image-pull
+    template:
+      data:
+        .dockerconfigjson: '{"auths":{"gitlab.home.rottlr.de:5050":{"username":"{{
+          .username }}","password":"{{ .password }}","auth":"{{ printf "%s:%s" .username
+          .password | b64enc }}"}}}'
+      type: kubernetes.io/dockerconfigjson
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: httproute
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  hostnames:
+  - my-service.k8s.home.rottlr.de
+  parentRefs:
+  - name: external
+    namespace: gateway
+  rules:
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: my-service
+      port: 8000
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: idp.rottler.io/v1alpha1
+kind: WebService
+metadata:
+  name: my-service
+  namespace: team-a-my-system-my-service
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: my-service
+    - apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      name: my-service
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: my-service-config
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: my-service-image-pull
+    - apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      name: my-service
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      name: my-service-view-workloads
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      name: my-service-view-workloads
+    - apiVersion: v1
+      kind: ServiceAccount
+      name: my-service
+    - apiVersion: v1
+      kind: Service
+      name: my-service
+status:
+  availableReplicas: 0
+  conditions:
+  - lastTransitionTime: "TIMESTAMP"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "TIMESTAMP"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "TIMESTAMP"
+    message: 'Unready resources: deployment, env-secret-config, hpa, and 6 more'
+    reason: Creating
+    status: "False"
+    type: Ready
+  phase: Provisioning
+  ready: false
+  url: https://my-service.k8s.home.rottlr.de
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: role
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service-view-workloads
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/log
+  - configmaps
+  - services
+  - limitranges
+  - resourcequotas
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - replicasets
+  - statefulsets
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  - cronjobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: rolebinding
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service-view-workloads
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: my-service-view-workloads
+subjects:
+- kind: ServiceAccount
+  name: my-service
+  namespace: team-a-my-system-my-service
+---
+apiVersion: v1
+automountServiceAccountToken: true
+kind: ServiceAccount
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: serviceaccount
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: service
+  labels:
+    app.kubernetes.io/component: web-service
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: my-service
+    backstage.io/kubernetes-id: my-service
+    crossplane.io/composite: my-service
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: my-service
+  namespace: team-a-my-system-my-service
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: WebService
+    name: my-service
+    uid: UID
+spec:
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: my-service
+    app.kubernetes.io/name: my-service
+  type: ClusterIP

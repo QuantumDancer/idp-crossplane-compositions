@@ -17,6 +17,15 @@ spec:
   image: rabbitmq:{{ $version }}-management
   persistence:
     storage: {{ $storageSize }}
+  # The cluster-operator derives RabbitMQ's memory high-watermark from the pod
+  # memory limit, so the limit is the real sizing lever. request==limit gives the
+  # broker a Guaranteed-QoS pod and a stable watermark. Sized per storage tier in
+  # variables.yaml to keep disk_free_limit >= RAM and PVC comfortably > RAM.
+  resources:
+    requests:
+      memory: {{ $memory }}
+    limits:
+      memory: {{ $memory }}
   rabbitmq:
     # Override the operator's default disk_free_limit.absolute=2GB, which exceeds
     # the smaller PVCs and keeps the disk-free alarm permanently on (it blocks all

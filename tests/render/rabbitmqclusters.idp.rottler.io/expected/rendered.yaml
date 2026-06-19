@@ -86,8 +86,13 @@ metadata:
 spec:
   image: rabbitmq:3.13-management
   persistence:
-    storage: 1Gi
+    storage: 5Gi
   rabbitmq:
     additionalConfig: |
-      disk_free_limit.absolute = 256MB
+      disk_free_limit.absolute = 2GB
   replicas: 1
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 1Gi

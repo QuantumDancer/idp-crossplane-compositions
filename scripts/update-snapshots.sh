@@ -91,8 +91,11 @@ EOF
 
 # --- Regenerate golden files ---------------------------------------------
 for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
-  xrd=$(basename "$xrd_dir")
-  echo "==> Updating snapshot for $xrd"
+  test_name=$(basename "$xrd_dir")
+  # See test-render.sh: a "<xrd>__<variant>" dir is an extra scenario reusing
+  # an existing XRD's composition with its own example/observed inputs.
+  xrd=${test_name%%__*}
+  echo "==> Updating snapshot for $test_name"
 
   mkdir -p "$xrd_dir/expected"
 
@@ -100,14 +103,23 @@ for xrd_dir in "$REPO_ROOT"/tests/render/*/; do
     --values "$REPO_ROOT/environments/homelab.yaml" \
     > /tmp/composition.yaml
 
+  example="$REPO_ROOT/examples/$xrd/default.yaml"
+  [[ -f "$xrd_dir/example.yaml" ]] && example="$xrd_dir/example.yaml"
+
+  # Mirror test-render.sh: an optional observed.yaml feeds mocked observed
+  # composed resources so the golden reflects the reconcile-time render path.
+  OBSERVED_ARGS=()
+  [[ -f "$xrd_dir/observed.yaml" ]] && OBSERVED_ARGS=(--observed-resources "$xrd_dir/observed.yaml")
+
   "$CRANK" composition render \
-    "$REPO_ROOT/examples/$xrd/default.yaml" \
+    "$example" \
     /tmp/composition.yaml \
     "$xrd_dir/functions.ci.yaml" \
     --crossplane-binary "$CROSSPLANE_SERVER_BIN" \
+    "${OBSERVED_ARGS[@]}" \
     > /tmp/rendered.yaml
 
   normalize /tmp/rendered.yaml > "$xrd_dir/expected/rendered.yaml"
 
-  echo "OK: wrote $xrd_dir/expected/rendered.yaml"
+  echo "OK: wrote ($test_name) $xrd_dir/expected/rendered.yaml"
 done
