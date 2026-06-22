@@ -1,0 +1,89 @@
+{{- $xrName := .observed.composite.resource.metadata.name -}}
+{{- $namespace := .observed.composite.resource.metadata.namespace -}}
+{{- $spec := .observed.composite.resource.spec -}}
+{{- $team := $spec.team -}}
+{{- $environment := $spec.environment -}}
+{{- $ha := $spec.ha | default false -}}
+{{- $persistence := $spec.persistence | default false -}}
+{{- /* `auth` defaults to true, and `| default true` would clobber an explicit
+       auth: false (Go's `default` treats false as empty). Read it via hasKey so
+       a deliberately unauthenticated store is preserved — same idiom as
+       WebService's metrics.enabled. */ -}}
+{{- $auth := true -}}
+{{- if hasKey $spec "auth" -}}{{- $auth = $spec.auth -}}{{- end -}}
+
+{{- $secretName := printf "%s-connection" $xrName -}}
+{{- $host := printf "%s.%s.svc" $xrName $namespace -}}
+{{- $port := "6379" -}}
+
+{{- /* Dragonfly is single-master with optional replicas; 2 pods (master + 1
+       replica) is the minimal HA setup the operator can fail over between. No
+       quorum like RabbitMQ, so there is no odd-replica requirement. */ -}}
+{{- $replicas := 1 -}}
+{{- if $ha -}}{{- $replicas = 2 -}}{{- end -}}
+
+{{- /* Memory is the capacity lever: Dragonfly derives its maxmemory from the pod
+       cgroup memory limit, so request==limit gives a Guaranteed-QoS pod and a
+       stable cap. PVC tier only applies when persistence is enabled. */ -}}
+{{- /* Memory per tier is held at 2x the Dragonfly thread floor (threads * 256MiB):
+       Dragonfly exits unless available memory is strictly greater than that
+       floor, so each tier carries one thread's worth of headroom for the working
+       set on top of it. small=512Mi/1 thread, medium=1Gi/2, large=2Gi/4,
+       x-large=4Gi/8 — see $threadsMap below. */ -}}
+{{- $memoryMap := dict "small" "512Mi" "medium" "1Gi" "large" "2Gi" "x-large" "4Gi" -}}
+{{- $cpuMap := dict "small" "100m" "medium" "250m" "large" "500m" "x-large" "1" -}}
+{{- $pvcMap := dict "small" "1Gi" "medium" "5Gi" "large" "10Gi" "x-large" "20Gi" -}}
+{{- /* Dragonfly spins one IO (proactor) thread per host core by default — it
+       reads the node's core count, not the pod's CPU request/limit — and refuses
+       to start unless ~256MiB is available per thread (threads * 256MiB <= pod
+       memory limit). On a multi-core node a small 256Mi pod would otherwise
+       demand multiple GiB and crash-loop. Pin the thread count per tier so it
+       stays within the memory budget: threads * 256MiB <= tier memory. */ -}}
+{{- $threadsMap := dict "small" 1 "medium" 2 "large" 4 "x-large" 8 -}}
+{{- $sizeKey := $spec.size | default "small" -}}
+{{- $memory := index $memoryMap $sizeKey -}}
+{{- $cpu := index $cpuMap $sizeKey -}}
+{{- $pvcSize := index $pvcMap $sizeKey -}}
+{{- $threads := index $threadsMap $sizeKey -}}
+
+{{- /* Reuse the password from the already-applied connection Secret so it stays
+       stable across reconciles — without this, randAlphaNum would mint a new
+       password every reconcile and diverge from the one the store enforces.
+       function-go-templating exposes observed composed resources under
+       .observed.resources (see the RabbitMQInstance note for the same trap). */ -}}
+{{- $password := randAlphaNum 32 -}}
+{{- if .observed.resources -}}
+  {{- $observedSecret := index .observed.resources "connection-secret" -}}
+  {{- if and $observedSecret $observedSecret.resource.data.password -}}
+    {{- $password = $observedSecret.resource.data.password | b64dec -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Redis URI. The username MUST be the literal "default" (Dragonfly/Redis ACL
+       default user), not empty: the password-only form redis://:<pw>@host makes
+       strict clients (redis-cli -u, and any ACL-correct parser) send AUTH with an
+       empty username, which Dragonfly rejects as WRONGPASS. redis://default:<pw>@host
+       authenticates everywhere. No auth → redis://host:port. */ -}}
+{{- $url := printf "redis://%s:%s" $host $port -}}
+{{- if $auth -}}
+  {{- $url = printf "redis://default:%s@%s:%s" $password $host $port -}}
+{{- end -}}
+
+{{- /* Readiness is computed here (not in status.yaml) so status.yaml stays a
+       clean manifest: inline {{- -}} assignments there would trim the newline
+       after the trailing comment and glue apiVersion onto it, silently
+       commenting out the composite's GVK. The Dragonfly operator signals health
+       via status.phase == "Ready", not the standard Ready condition. */ -}}
+{{- $store := getComposedResource . "keyvaluestore" -}}
+{{- $phase := "" -}}
+{{- if $store -}}{{- $phase = $store.status.phase | default "" -}}{{- end -}}
+{{- $ready := eq $phase "Ready" -}}
+
+{{- $labels := dict
+  "app.kubernetes.io/name" "key-value-store"
+  "app.kubernetes.io/instance" $xrName
+  "app.kubernetes.io/component" "cache"
+  "app.kubernetes.io/managed-by" "crossplane"
+  "idp.rottler.io/team" $team
+  "idp.rottler.io/environment" $environment
+-}}

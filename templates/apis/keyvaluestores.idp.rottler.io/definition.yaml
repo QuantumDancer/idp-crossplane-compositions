@@ -1,0 +1,104 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: keyvaluestores.idp.rottler.io
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: key-value-store
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: key-value-store
+spec:
+  scope: Namespaced
+  group: idp.rottler.io
+  names:
+    kind: KeyValueStore
+    plural: keyvaluestores
+  defaultCompositionRef:
+    name: keyvaluestore-dragonfly
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: >
+            KeyValueStore provisions a Redis-compatible in-memory key/value store
+            for a single service and writes a <name>-connection Secret (with a
+            url/uri key) into the XR namespace. Backed by the Dragonfly operator.
+            Consumed the same way as a RabbitMQInstance connection Secret: the
+            service's workloads mount it directly, no Vault or ESO involved.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                team:
+                  type: string
+                  description: >-
+                    Team that owns this resource (GitLab group / Backstage Group),
+                    e.g. team-a. Stamped onto every composed resource as the
+                    idp.rottler.io/team label.
+                environment:
+                  type: string
+                  description: >-
+                    Cluster environment. Stamped as the idp.rottler.io/environment label.
+                  enum:
+                    - homelab
+                    - development
+                    - production
+                size:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                    - x-large
+                  default: small
+                  description: |
+                    Memory/CPU tier for the store. Dragonfly derives its maxmemory
+                    from the pod memory limit, so this is the real capacity lever.
+                    small: 512Mi/100m, medium: 1Gi/250m, large: 2Gi/500m, x-large: 4Gi/1.
+                ha:
+                  type: boolean
+                  default: false
+                  description: |
+                    Enable high availability.
+                    false (default): 1 standalone pod.
+                    true: 2 pods (1 master + 1 replica) with operator-managed failover.
+                auth:
+                  type: boolean
+                  default: true
+                  description: |
+                    Require password authentication.
+                    true (default): a random password is generated, stored in the
+                    connection Secret, and enforced on the store (redis://:<pw>@...).
+                    false: no password (redis://...); only sensible for throwaway/dev stores.
+                persistence:
+                  type: boolean
+                  default: false
+                  description: |
+                    Persist data to a PersistentVolume via periodic Dragonfly snapshots.
+                    false (default): purely in-memory — data is lost on pod restart.
+                    Leave false for ephemeral, TTL-driven caches (e.g. live job state).
+                    true: snapshot to a PVC sized by the size tier (small 1Gi … x-large 20Gi).
+              required:
+                - team
+                - environment
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: Current lifecycle phase (Provisioning, Running, Failed).
+                ready:
+                  type: boolean
+                  description: Whether the store is provisioned and accepting connections.
+                connectionSecretRef:
+                  type: string
+                  description: Name of the Kubernetes Secret containing connection details.
+              required:
+                - ready

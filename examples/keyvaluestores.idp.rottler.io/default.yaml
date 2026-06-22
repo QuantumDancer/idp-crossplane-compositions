@@ -1,0 +1,14 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: KeyValueStore
+metadata:
+  name: jobs-state
+  namespace: team-a-e2e-backstage-test-backend
+spec:
+  team: team-a
+  environment: homelab
+  size: small
+  ha: false
+  auth: true
+  # Ephemeral by design: job state is short-lived and expired via per-key TTL,
+  # so there is nothing worth persisting across restarts.
+  persistence: false

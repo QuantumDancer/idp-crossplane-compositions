@@ -6,15 +6,16 @@ Developers create instances of these resources in their application namespaces. 
 
 ## XRD Catalog
 
-| XRD Kind                                                  | Scope     | Purpose                                       |
-| --------------------------------------------------------- | --------- | --------------------------------------------- |
-| [PostgreSQLDatabase](xrds/postgresql-database.md)         | Namespace | CloudNativePG cluster + credential management |
-| [ApplicationEnvironment](xrds/application-environment.md) | Cluster   | Namespace + RBAC + ArgoCD Application         |
-| [TeamInfraEnvironment](xrds/team-infra-environment.md)    | Cluster   | Team infra namespace + ArgoCD Application     |
-| [RabbitMQCluster](xrds/rabbitmq-cluster.md)               | Namespace | Dedicated RabbitMQ broker per team            |
-| [RabbitMQInstance](xrds/rabbitmq-instance.md)             | Namespace | Vhost, user, topology + connection secret     |
-| [WebService](xrds/web-service.md)                         | Namespace | HTTP workload: Deployment + Service + route   |
-| [Worker](xrds/worker.md)                                  | Namespace | Headless workload; KEDA queue-depth scaling   |
+| XRD Kind                                                  | Scope     | Purpose                                        |
+| --------------------------------------------------------- | --------- | ---------------------------------------------- |
+| [PostgreSQLDatabase](xrds/postgresql-database.md)         | Namespace | CloudNativePG cluster + credential management  |
+| [ApplicationEnvironment](xrds/application-environment.md) | Cluster   | Namespace + RBAC + ArgoCD Application          |
+| [TeamInfraEnvironment](xrds/team-infra-environment.md)    | Cluster   | Team infra namespace + ArgoCD Application      |
+| [RabbitMQCluster](xrds/rabbitmq-cluster.md)               | Namespace | Dedicated RabbitMQ broker per team             |
+| [RabbitMQInstance](xrds/rabbitmq-instance.md)             | Namespace | Vhost, user, topology + connection secret      |
+| [WebService](xrds/web-service.md)                         | Namespace | HTTP workload: Deployment + Service + route    |
+| [Worker](xrds/worker.md)                                  | Namespace | Headless workload; KEDA queue-depth scaling    |
+| [KeyValueStore](xrds/key-value-store.md)                  | Namespace | Redis-compatible KV store (Dragonfly) + secret |
 
 ## API Conventions
 

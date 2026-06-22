@@ -90,6 +90,7 @@ content = re.sub(r'lastTransitionTime: "[^"]*"', 'lastTransitionTime: "TIMESTAMP
 content = re.sub(r'\buid: [0-9a-f-]{36}\b', 'uid: UID', content)
 content = re.sub(r'^  password: .*$', '  password: PASSWORD', content, flags=re.MULTILINE)
 content = re.sub(r'^  uri: .*$', '  uri: URI', content, flags=re.MULTILINE)
+content = re.sub(r'^  url: .*$', '  url: URL', content, flags=re.MULTILINE)
 
 docs = [d.strip() for d in re.split(r'\n---\n|^---\n', content, flags=re.MULTILINE) if d.strip()]
 docs.sort()

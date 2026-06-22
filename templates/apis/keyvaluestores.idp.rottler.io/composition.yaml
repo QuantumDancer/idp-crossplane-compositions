@@ -1,0 +1,33 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: keyvaluestore-dragonfly
+  labels:
+    app.kubernetes.io/name: idp-crossplane-compositions
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: idp
+    app.kubernetes.io/component: key-value-store
+    idp.rottler.io/team: platform
+    idp.rottler.io/system: idp
+    idp.rottler.io/component: key-value-store
+    crossplane.io/xrd: keyvaluestores.idp.rottler.io
+spec:
+  compositeTypeRef:
+    apiVersion: idp.rottler.io/v1alpha1
+    kind: KeyValueStore
+  mode: Pipeline
+  pipeline:
+  - step: create-store-resources
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          {{- .Files.Get "files/keyvaluestores.idp.rottler.io/variables.yaml" | nindent 10 }}
+          {{- .Files.Get "files/keyvaluestores.idp.rottler.io/secret.yaml" | nindent 10 }}
+          {{- .Files.Get "files/keyvaluestores.idp.rottler.io/dragonfly.yaml" | nindent 10 }}
+          {{- .Files.Get "files/keyvaluestores.idp.rottler.io/status.yaml" | nindent 10 }}

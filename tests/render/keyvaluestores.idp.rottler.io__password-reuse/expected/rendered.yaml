@@ -1,0 +1,99 @@
+---
+apiVersion: idp.rottler.io/v1alpha1
+kind: KeyValueStore
+metadata:
+  name: jobs-state
+  namespace: team-a-e2e-backstage-test-backend
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      name: jobs-state
+    - apiVersion: v1
+      kind: Secret
+      name: jobs-state-connection
+status:
+  conditions:
+  - lastTransitionTime: "2026-06-22T19:06:33Z"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "2026-06-22T19:06:33Z"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "2026-06-22T19:06:33Z"
+    reason: Creating
+    status: "False"
+    type: Ready
+  connectionSecretRef: jobs-state-connection
+  phase: Provisioning
+  ready: false
+---
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: keyvaluestore
+  labels:
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/instance: jobs-state
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: key-value-store
+    crossplane.io/composite: jobs-state
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: jobs-state
+  namespace: team-a-e2e-backstage-test-backend
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: KeyValueStore
+    name: jobs-state
+    uid: 9a834b6d-a902-5127-987f-1f757455c72a
+spec:
+  args:
+  - --proactor_threads=1
+  authentication:
+    passwordFromSecret:
+      key: password
+      name: jobs-state-connection
+  replicas: 1
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: connection-secret
+  labels:
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/instance: jobs-state
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: key-value-store
+    crossplane.io/composite: jobs-state
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: jobs-state-connection
+  namespace: team-a-e2e-backstage-test-backend
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: KeyValueStore
+    name: jobs-state
+    uid: 9a834b6d-a902-5127-987f-1f757455c72a
+stringData:
+  host: jobs-state.team-a-e2e-backstage-test-backend.svc
+  password: reused-stable-password-1234567890
+  port: "6379"
+  uri: redis://default:reused-stable-password-1234567890@jobs-state.team-a-e2e-backstage-test-backend.svc:6379
+  url: redis://default:reused-stable-password-1234567890@jobs-state.team-a-e2e-backstage-test-backend.svc:6379
+type: Opaque

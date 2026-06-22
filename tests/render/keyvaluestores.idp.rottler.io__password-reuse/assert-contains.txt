@@ -1,0 +1,7 @@
+# The known password from observed.yaml's connection Secret must appear verbatim
+# in the rendered output. normalize() rewrites every password:/url:/uri: line, so
+# the golden alone cannot prove reuse — these literal checks on the raw render
+# output do. If the reuse branch regresses, randAlphaNum produces a different
+# 32-char value and these substrings go missing.
+password: reused-stable-password-1234567890
+url: redis://default:reused-stable-password-1234567890@jobs-state.team-a-e2e-backstage-test-backend.svc:6379

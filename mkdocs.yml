@@ -9,5 +9,6 @@ nav:
       - RabbitMQInstance: xrds/rabbitmq-instance.md
       - WebService: xrds/web-service.md
       - Worker: xrds/worker.md
+      - KeyValueStore: xrds/key-value-store.md
 plugins:
   - techdocs-core

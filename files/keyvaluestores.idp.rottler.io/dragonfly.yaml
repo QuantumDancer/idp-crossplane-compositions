@@ -1,0 +1,45 @@
+---
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: {{ $xrName }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- range $key, $value := $labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: keyvaluestore
+spec:
+  replicas: {{ $replicas }}
+  # Pin IO threads to the tier (appended to the operator's default args). Without
+  # this Dragonfly sizes threads from the node's core count and crash-loops when
+  # threads * 256MiB exceeds the pod memory limit — see variables.yaml.
+  args:
+    - "--proactor_threads={{ $threads }}"
+  # request==limit on memory gives the pod Guaranteed QoS and a stable cgroup
+  # limit, which is what Dragonfly autodetects its maxmemory from.
+  resources:
+    requests:
+      cpu: {{ $cpu }}
+      memory: {{ $memory }}
+    limits:
+      memory: {{ $memory }}
+  {{- if $auth }}
+  authentication:
+    passwordFromSecret:
+      name: {{ $secretName }}
+      key: password
+  {{- end }}
+  {{- if $persistence }}
+  # Periodic snapshot to a PVC. The default (no snapshot) keeps the store purely
+  # in-memory, which is correct for ephemeral TTL-driven caches.
+  snapshot:
+    cron: "*/15 * * * *"
+    persistentVolumeClaimSpec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ $pvcSize }}
+  {{- end }}
