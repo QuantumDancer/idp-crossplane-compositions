@@ -28,5 +28,19 @@ spec:
       app.kubernetes.io/name: {{ $xrName }}
       app.kubernetes.io/part-of: rabbitmq
   podMetricsEndpoints:
+    # Aggregated endpoint: node/global health (memory, disk-alarm, connections,
+    # publish/deliver rates). Carries no queue/vhost labels — series are summed
+    # across all queues — so it can't answer "how deep is jobs.dlq?".
     - port: prometheus
       path: /metrics
+    # Detailed endpoint: per-queue depth with {queue,vhost} labels, emitting
+    # rabbitmq_detailed_queue_messages_ready / _messages_unacked / _messages and
+    # rabbitmq_detailed_queue_consumers. Scoped to the two queue metric families
+    # so we get per-queue depth without the cardinality blowup of
+    # /metrics/per-object (which also fans out per-connection/-channel).
+    - port: prometheus
+      path: /metrics/detailed
+      params:
+        family:
+          - queue_coarse_metrics
+          - queue_consumer_count

@@ -55,6 +55,12 @@ spec:
   podMetricsEndpoints:
   - path: /metrics
     port: prometheus
+  - params:
+      family:
+      - queue_coarse_metrics
+      - queue_consumer_count
+    path: /metrics/detailed
+    port: prometheus
   selector:
     matchLabels:
       app.kubernetes.io/name: team-a-rabbitmq
