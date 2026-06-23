@@ -23,7 +23,7 @@ spec:
   project: team-a
   source:
     directory:
-      exclude: catalog-info.yaml
+      exclude: '{catalog-info.yaml,*-catalog-info.yaml}'
     path: ./
     repoURL: https://gitlab.home.rottlr.de/idp/team-a/team-a-infra.git
     targetRevision: main

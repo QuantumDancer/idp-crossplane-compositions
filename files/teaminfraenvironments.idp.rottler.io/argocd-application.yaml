@@ -16,9 +16,14 @@ spec:
     targetRevision: main
     path: ./
     directory:
-      # The repo root also contains the Backstage entity file, which is not a
-      # Kubernetes manifest and must not be applied to the cluster.
-      exclude: catalog-info.yaml
+      # The repo root also contains Backstage entity files, which are not
+      # Kubernetes manifests and must not be applied to the cluster. Besides the
+      # namespace's own catalog-info.yaml, templates that target this repo commit
+      # per-resource entities named <resource>-catalog-info.yaml (e.g. the
+      # rabbitmq-cluster template's <team>-rabbitmq-catalog-info.yaml), so the
+      # glob must cover both. Excluding them here (not just annotating the entity
+      # with argocd hook: Skip) is what keeps them out of ArgoCD's resource tree.
+      exclude: "{catalog-info.yaml,*-catalog-info.yaml}"
 
   destination:
     server: https://kubernetes.default.svc
