@@ -1,0 +1,17 @@
+# Wildcard allowedNamespaces ("*") is what the rabbitmq-cluster Backstage template
+# emits for a shared broker. "*" is a YAML alias indicator, so the composition must
+# quote it in the rabbitmq.com/topology-allowed-namespaces annotation or the rendered
+# manifest is invalid YAML and the pipeline step fails with a fatal decode error.
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+spec:
+  team: team-a
+  environment: homelab
+  ha: true
+  version: "3.13"
+  storageSize: small
+  allowedNamespaces:
+    - "*"

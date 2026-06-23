@@ -1,0 +1,111 @@
+apiVersion: idp.rottler.io/v1alpha1
+kind: RabbitMQCluster
+metadata:
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+spec:
+  crossplane:
+    resourceRefs:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: PodMonitor
+      name: team-a-rabbitmq
+    - apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: team-a-rabbitmq
+status:
+  conditions:
+  - lastTransitionTime: "TIMESTAMP"
+    reason: WatchCircuitClosed
+    status: "True"
+    type: Responsive
+  - lastTransitionTime: "TIMESTAMP"
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
+  - lastTransitionTime: "TIMESTAMP"
+    reason: Creating
+    status: "False"
+    type: Ready
+  phase: Provisioning
+  ready: false
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: podmonitor
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: team-a-rabbitmq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-cluster
+    crossplane.io/composite: team-a-rabbitmq
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQCluster
+    name: team-a-rabbitmq
+    uid: UID
+spec:
+  podMetricsEndpoints:
+  - path: /metrics
+    port: prometheus
+  - params:
+      family:
+      - queue_coarse_metrics
+      - queue_consumer_count
+    path: /metrics/detailed
+    port: prometheus
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: team-a-rabbitmq
+      app.kubernetes.io/part-of: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: rabbitmq-cluster
+    rabbitmq.com/topology-allowed-namespaces: '*'
+  labels:
+    app.kubernetes.io/component: messaging
+    app.kubernetes.io/instance: team-a-rabbitmq
+    app.kubernetes.io/managed-by: crossplane
+    app.kubernetes.io/name: rabbitmq-cluster
+    crossplane.io/composite: team-a-rabbitmq
+    idp.rottler.io/environment: homelab
+    idp.rottler.io/team: team-a
+  name: team-a-rabbitmq
+  namespace: team-a-infra
+  ownerReferences:
+  - apiVersion: idp.rottler.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: RabbitMQCluster
+    name: team-a-rabbitmq
+    uid: UID
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: team-a-rabbitmq
+        topologyKey: kubernetes.io/hostname
+  image: rabbitmq:3.13-management
+  persistence:
+    storage: 5Gi
+  rabbitmq:
+    additionalConfig: |
+      disk_free_limit.absolute = 2GB
+  replicas: 3
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 1Gi

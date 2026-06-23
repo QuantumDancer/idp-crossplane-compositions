@@ -11,7 +11,10 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: rabbitmq-cluster
     # Required for RabbitMQInstance topology resources (Vhost, User, Queue, etc.)
     # to be accepted when they reference this cluster from a different namespace.
-    rabbitmq.com/topology-allowed-namespaces: {{ $allowedNamespacesValue }}
+    # Quoted because the shared-broker value is "*" (allow all namespaces), and a
+    # bare leading * is a YAML alias indicator — unquoted it makes the rendered
+    # manifest invalid YAML and the pipeline step fails to decode.
+    rabbitmq.com/topology-allowed-namespaces: {{ $allowedNamespacesValue | quote }}
 spec:
   replicas: {{ $replicas }}
   image: rabbitmq:{{ $version }}-management
