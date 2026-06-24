@@ -28,7 +28,7 @@ variables:
 helm-lint:
   stage: lint
   image:
-    name: alpine/helm:3.20.2
+    name: alpine/helm:3.21.2
     entrypoint: [""]
   script:
     - helm lint . --values environments/homelab.yaml
@@ -37,7 +37,7 @@ helm-lint:
 render-test:
   stage: render
   image:
-    name: alpine/helm:3.20.2
+    name: alpine/helm:3.21.2
     entrypoint: [""]
   before_script:
     - apk add --no-cache curl bash
