@@ -83,7 +83,7 @@ render-test:
 
 chainsaw-e2e:
   stage: e2e
-  image: alpine:3.21
+  image: alpine:3.24
   variables:
     # The runner mounts the host's rootless Podman socket at this path (see
     # runner config). k3d talks to Podman via this socket — no Docker daemon
