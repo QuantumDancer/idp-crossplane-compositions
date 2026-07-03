@@ -1,133 +1,61 @@
-stages: [lint, render, e2e, publish]
+# THROWAWAY branch pipeline — network diagnostics for the TechDocs S3 upload
+# stalls (see CI_TECHDOCS_PUBLISH_ISSUE.md §9). Runs in a real job container on
+# the real runner, where the failure happens. Never merge this branch.
+stages: [debug]
 
-# Run MR pipelines when an MR is open; fall back to branch pipelines otherwise.
-# Without this, jobs without explicit `rules:` only appear in branch pipelines
-# and are silently omitted from MR pipelines, meaning lint/render never show up
-# in MR Code Quality / coverage reports.
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    # Suppress the duplicate branch pipeline when an MR is already open so we
-    # don't run verify twice for the same commit.
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-      when: never
-    - if: $CI_COMMIT_BRANCH
-
-# Pin all tool versions here. Update intentionally — unpinned installs silently
-# break when an upstream release introduces incompatibilities.
-variables:
-  CRANE_VERSION: "v0.21.5"
-  MKDOCS_TECHDOCS_CORE_VERSION: "1.4.2"
-  TECHDOCS_CLI_VERSION: "1.9.2"
-  CROSSPLANE_VERSION: "v2.3.1"
-  K3D_VERSION: "v5.8.3"
-  KUBECTL_VERSION: "v1.35.3"
-  HELM_VERSION: "v3.20.2"
-  CHAINSAW_VERSION: "v0.2.14"
-
-helm-lint:
-  stage: lint
-  image:
-    name: alpine/helm:3.20.2
-    entrypoint: [""]
-  script:
-    - helm lint . --values environments/homelab.yaml
-    - helm template . --values environments/homelab.yaml --debug > /dev/null
-
-render-test:
-  stage: render
-  image:
-    name: alpine/helm:3.20.2
-    entrypoint: [""]
-  before_script:
-    - apk add --no-cache curl bash
-    - |
-      curl -sL "https://releases.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crank" \
-        -o /usr/local/bin/crossplane && chmod +x /usr/local/bin/crossplane
-    # The controller binary provides the 'internal render' subcommand that crank
-    # calls during composition render. Without it, crank tries to use Docker.
-    - |
-      curl -sL "https://releases.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crossplane" \
-        -o /usr/local/bin/crossplane-server && chmod +x /usr/local/bin/crossplane-server
-    # crane extracts OCI image filesystems without a Docker daemon.
-    # We use it to pull the function binaries directly from the registry.
-    - |
-      curl -sL "https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz" \
-        | tar -xz -C /usr/local/bin crane
-    # Export and extract each function binary, then start as a local gRPC server.
-    # functions.ci.yaml targets these servers via the Development runtime so
-    # crossplane render never needs to launch Docker containers.
-    - crane export xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.1 /tmp/fgt.tar
-    - |
-      func_path=$(tar -tf /tmp/fgt.tar | grep -E '^\.?/?function$' | head -1)
-      tar -xf /tmp/fgt.tar -C /usr/local/bin "$func_path"
-      mv /usr/local/bin/function /usr/local/bin/function-go-templating
-      chmod +x /usr/local/bin/function-go-templating
-    - crane export xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.6.5 /tmp/far.tar
-    - |
-      func_path=$(tar -tf /tmp/far.tar | grep -E '^\.?/?function$' | head -1)
-      tar -xf /tmp/far.tar -C /usr/local/bin "$func_path"
-      mv /usr/local/bin/function /usr/local/bin/function-auto-ready
-      chmod +x /usr/local/bin/function-auto-ready
-    - function-go-templating --insecure &
-    - function-auto-ready --insecure --address :9444 &
-    # Poll until both gRPC servers accept connections rather than sleeping a fixed delay.
-    - timeout 10 sh -c 'until nc -z localhost 9443 && nc -z localhost 9444; do sleep 0.2; done'
-  script:
-    - ./scripts/test-render.sh
-  artifacts:
-    # Upload actual render output on failure for easy diff inspection
-    when: on_failure
-    paths:
-      - tests/render/**/actual.yaml
-
-chainsaw-e2e:
-  stage: e2e
+net-debug:
+  stage: debug
   image: alpine:3.21
+  timeout: 20m
   variables:
-    # The runner mounts the host's rootless Podman socket at this path (see
-    # runner config). k3d talks to Podman via this socket — no Docker daemon
-    # or privileged mode required.
-    DOCKER_HOST: unix:///run/podman/podman.sock
-  before_script:
-    - apk add --no-cache curl bash
-    # k3d (k3s in Docker/Podman) instead of kind: kind node images run systemd
-    # as PID 1, which requires a writable /sys/fs/cgroup — read-only in the
-    # runner container. k3s has no such dependency.
-    - |
-      curl -sL "https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64" \
-        -o /usr/local/bin/k3d && chmod +x /usr/local/bin/k3d
-    - |
-      curl -sL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
-        -o /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl
-    - |
-      curl -sL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
-        | tar -xz --strip-components=1 -C /usr/local/bin linux-amd64/helm
-    # chainsaw releases ship as tarballs — there is no standalone binary asset
-    - |
-      curl -sL "https://github.com/kyverno/chainsaw/releases/download/${CHAINSAW_VERSION}/chainsaw_linux_amd64.tar.gz" \
-        | tar -xz -C /usr/local/bin chainsaw && chmod +x /usr/local/bin/chainsaw
+    DIRECT: "http://s3-direct.garage.k8s.home.rottlr.de:3900"
+    GATEWAY: "https://s3.garage.k8s.home.rottlr.de"
   script:
-    - ./scripts/run-e2e.sh
+    - apk add --no-cache curl iputils iproute2 bind-tools coreutils
+    - echo "=== container network ==="
+    - ip -o link show
+    - ip route
+    - echo "=== DNS ==="
+    - nslookup s3-direct.garage.k8s.home.rottlr.de || true
+    - echo "=== DF ping sweep to 192.168.31.11 (payload sizes; +28 = packet size) ==="
+    - for s in 1472 1452 1424 1400 1300 500; do ping -M do -c1 -W2 -s $s 192.168.31.11 >/dev/null 2>&1 && echo "DF ping $s OK" || echo "DF ping $s FAIL"; done
+    - echo "=== tracepath (PMTU discovery) ==="
+    - tracepath -n -m 8 192.168.31.11 || true
+    - echo "=== sized PUTs, direct endpoint ==="
+    # curl exit != 0 (timeout/conn) and HTTP >= 400 (-f) both count as FAIL.
+    # The size where PUTs start failing discriminates: ~1 KB-threshold = MSS/MTU
+    # blackhole; ~1 MiB = proxy buffer; all pass = problem is elsewhere.
+    - |
+      for kb in 1 8 64 256 1024 3072; do
+        dd if=/dev/urandom of=/tmp/f bs=1024 count=$kb 2>/dev/null
+        t0=$(date +%s)
+        if curl -sf -o /dev/null --max-time 60 --aws-sigv4 "aws:amz:${AWS_REGION}:s3" \
+             --user "${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}" \
+             -X PUT --data-binary @/tmp/f "${DIRECT}/techdocs/__net-debug-${kb}k"; then
+          echo "PUT ${kb}KB direct OK ($(( $(date +%s) - t0 ))s)"
+        else
+          echo "PUT ${kb}KB direct FAIL rc=$? ($(( $(date +%s) - t0 ))s)"
+        fi
+      done
+    - echo "=== sized PUTs, gateway endpoint (A/B) ==="
+    - |
+      for kb in 256 1024 3072; do
+        dd if=/dev/urandom of=/tmp/f bs=1024 count=$kb 2>/dev/null
+        t0=$(date +%s)
+        if curl -sf -o /dev/null --max-time 60 --aws-sigv4 "aws:amz:${AWS_REGION}:s3" \
+             --user "${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}" \
+             -X PUT --data-binary @/tmp/f "${GATEWAY}/techdocs/__net-debug-${kb}k"; then
+          echo "PUT ${kb}KB gateway OK ($(( $(date +%s) - t0 ))s)"
+        else
+          echo "PUT ${kb}KB gateway FAIL rc=$? ($(( $(date +%s) - t0 ))s)"
+        fi
+      done
+    - echo "=== cleanup ==="
+    - |
+      for kb in 1 8 64 256 1024 3072; do
+        curl -s -o /dev/null --aws-sigv4 "aws:amz:${AWS_REGION}:s3" \
+          --user "${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}" \
+          -X DELETE "${DIRECT}/techdocs/__net-debug-${kb}k" || true
+      done
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
-techdocs-publish:
-  stage: publish
-  image: python:3.12-slim
-  before_script:
-    - pip install "mkdocs-techdocs-core==${MKDOCS_TECHDOCS_CORE_VERSION}"
-    - apt-get update -qq && apt-get install -y -qq nodejs npm
-    - npm install -g "@techdocs/cli@${TECHDOCS_CLI_VERSION}"
-  script:
-    - techdocs-cli generate --no-docker --source-dir . --output-dir ./site
-    - echo techdocs-cli publish --publisher-type awsS3 --storage-name "${TECHDOCS_S3_BUCKET}" --awsEndpoint "${TECHDOCS_S3_ENDPOINT}" --awsS3ForcePathStyle --entity default/Component/crossplane-compositions
-    - techdocs-cli publish
-        --publisher-type awsS3
-        --storage-name "${TECHDOCS_S3_BUCKET}"
-        --awsEndpoint "${TECHDOCS_S3_ENDPOINT}"
-        --awsS3ForcePathStyle
-        --entity default/Component/crossplane-compositions
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "ci-net-debug"
