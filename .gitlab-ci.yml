@@ -122,7 +122,6 @@ techdocs-publish:
     - npm install -g "@techdocs/cli@${TECHDOCS_CLI_VERSION}"
   script:
     - techdocs-cli generate --no-docker --source-dir . --output-dir ./site
-    - echo techdocs-cli publish --publisher-type awsS3 --storage-name "${TECHDOCS_S3_BUCKET}" --awsEndpoint "${TECHDOCS_S3_ENDPOINT}" --awsS3ForcePathStyle --entity default/Component/crossplane-compositions
     - techdocs-cli publish
         --publisher-type awsS3
         --storage-name "${TECHDOCS_S3_BUCKET}"
