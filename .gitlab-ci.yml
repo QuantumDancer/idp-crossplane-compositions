@@ -3,6 +3,41 @@
 # the real runner, where the failure happens. Never merge this branch.
 stages: [debug]
 
+# The job container only sees the podman bridge; the routing decision for the
+# VIPs happens on the runner HOST. The rootful podman socket is mounted into
+# every job container (runner config), so spawn a --network host container to
+# read the host's actual routes, redirect cache, and neighbor table.
+host-net-debug:
+  stage: debug
+  image: alpine:3.21
+  timeout: 10m
+  variables:
+    CONTAINER_HOST: unix:///run/podman/podman.sock
+  script:
+    - apk add --no-cache podman
+    - |
+      podman --remote run --rm --network host docker.io/library/alpine:3.21 sh -c '
+        apk add --no-cache -q iproute2
+        echo "=== host $(hostname) ==="
+        ip -4 addr show
+        echo "=== ip route show ==="
+        ip route show
+        echo "=== route get 192.168.31.11 (garage direct) ==="
+        ip route get 192.168.31.11
+        echo "=== route get 192.168.31.10 (gateway VIP) ==="
+        ip route get 192.168.31.10
+        echo "=== route get 192.168.30.52 (node, same L2 control) ==="
+        ip route get 192.168.30.52
+        echo "=== redirect exceptions / route cache ==="
+        ip route show cache || true
+        echo "=== neighbors ==="
+        ip neigh show
+        echo "=== redirect sysctls ==="
+        sysctl net.ipv4.conf.all.accept_redirects net.ipv4.conf.default.accept_redirects 2>/dev/null || true
+      '
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ci-net-debug"
+
 net-debug:
   stage: debug
   image: alpine:3.21
