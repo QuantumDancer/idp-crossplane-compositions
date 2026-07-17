@@ -17,8 +17,6 @@ workflow:
 # break when an upstream release introduces incompatibilities.
 variables:
   CRANE_VERSION: "v0.21.5"
-  MKDOCS_TECHDOCS_CORE_VERSION: "1.4.2"
-  TECHDOCS_CLI_VERSION: "1.9.2"
   CROSSPLANE_VERSION: "v2.3.1"
   K3D_VERSION: "v5.8.3"
   KUBECTL_VERSION: "v1.35.3"
@@ -115,11 +113,11 @@ chainsaw-e2e:
 
 techdocs-publish:
   stage: publish
-  image: python:3.12-slim
-  before_script:
-    - pip install "mkdocs-techdocs-core==${MKDOCS_TECHDOCS_CORE_VERSION}"
-    - apt-get update -qq && apt-get install -y -qq nodejs npm
-    - npm install -g "@techdocs/cli@${TECHDOCS_CLI_VERSION}"
+  # Purpose-built image with Node 24, mkdocs-techdocs-core, and @techdocs/cli
+  # baked in at pinned versions (source: idp/base-images/base-image-techdocs-debian).
+  # Replaces the old per-job pip/npm install, which took ~3 min and pulled in
+  # Debian's Node 20 (triggering the AWS SDK v3 node-version deprecation warning).
+  image: gitlab.home.rottlr.de:5050/idp/base-images/base-image-techdocs-debian:v1.0.0
   script:
     - techdocs-cli generate --no-docker --source-dir . --output-dir ./site
     - techdocs-cli publish
